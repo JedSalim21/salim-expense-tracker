@@ -12,11 +12,13 @@ The human remains responsible for approving or rejecting the proposed approach.
 
 **Task:**
 
-Add a clear Sign Out capability to the authenticated SalimSpend experience
-using the existing Clerk integration. Keep the current signed-out Sign In and
-Sign Up experience and minimal signed-in state. Do not implement dashboard,
-transactions, categories, budgets, reports, database integration, protected
-routes, custom authorization, or profile management.
+Analyze and add a protected authenticated application boundary for SalimSpend
+using the existing Clerk integration. Signed-out users should continue to see
+the existing Sign In and Sign Up experience, while authenticated users should
+see the current minimal signed-in state or future authenticated app content.
+Do not implement dashboard, transactions, categories, budgets, reports,
+database integration, protected routes, custom authorization, or profile
+management as part of this task.
 
 **Status:** IMPLEMENTED
 
@@ -26,61 +28,61 @@ routes, custom authorization, or profile management.
 
 ### Proposed Approach
 
-Use Clerk's existing React components and provider rather than adding custom
-authentication state, session cleanup, or API calls.
+Use Clerk's existing React provider and conditional rendering rather than
+adding custom authentication state, authorization rules, or API calls.
 
-- Keep the existing signed-out `SignInButton` and `SignUpButton` modal entry
-  points in `App.jsx`.
-- Keep the existing `ClerkProvider` configuration in `main.jsx`, including the
-  configured post-sign-out URL.
-- Keep the existing `UserButton` and minimal signed-in content. It currently
-  provides sign-out through Clerk's account menu.
-- Add a clearly labeled Clerk `SignOutButton` in the authenticated header so
-  sign-out is directly discoverable without opening the account menu.
-- Preserve the current page structure and styling direction, adding only the
-  small amount of CSS needed for the explicit sign-out control.
+- Keep the existing `ClerkProvider` configuration in `main.jsx` as the source
+  of session state.
+- Keep the signed-out Sign In and Sign Up experience, including the existing
+  Clerk modal controls.
+- Treat the authenticated portion of `App.jsx` as the protected boundary using
+  Clerk's existing signed-in conditional pattern (`Show when="signed-in"`).
+- Keep the current signed-in header controls and minimal signed-in state inside
+  that boundary.
+- If a loading state is needed while Clerk resolves the session, render a small
+  neutral loading state rather than briefly showing protected content to a
+  signed-out user.
+- Do not add a router, custom token checks, role checks, database calls, or
+  authorization logic; those are separate decisions for a later feature task.
 
 ### Options
 
-1. **Add Clerk's `SignOutButton` beside the existing `UserButton`
-   (recommended).** This makes the required action visible while retaining
-   Clerk's account control and avoiding custom session logic.
-2. **Rely on the existing `UserButton` menu.** This requires no application
-   code change, but sign-out is less discoverable because users must open the
-   account menu first.
-3. **Use Clerk's `useClerk().signOut()` with a custom button.** This provides
-   visual control, but introduces application-owned event handling and more
-   responsibility for behavior already exposed by Clerk.
+1. **Extend the existing Clerk conditional boundary (recommended).** Keep
+   signed-out and signed-in content mutually exclusive with the current
+   `Show` pattern. This fits the current single-page app and adds no routing or
+   authorization abstraction.
+2. **Use Clerk's `SignedIn` and `SignedOut` components.** These make the intent
+   explicit and are a reasonable equivalent, but would replace the existing
+   local pattern without adding protection beyond conditional rendering.
+3. **Introduce protected routes with a router.** This would support future
+   multi-page navigation, but is unnecessary for the current single-screen
+   app and expands scope before dashboard or other authenticated features are
+   approved.
 
 ### Agent Recommendation
 
-Add Clerk's `SignOutButton` beside the existing `UserButton`. The current
-`UserButton` already supports sign-out, but a direct labeled control better
-satisfies the requirement for a clear Sign Out capability while keeping session
-handling, redirects, and cleanup inside Clerk. This is smaller and less risky
-than replacing the existing signed-in control or implementing a custom
-`signOut()` handler.
+Extend the existing `Show`-based signed-in boundary. It is already present in
+the app, keeps the signed-out authentication entry points working, and is the
+smallest change that prevents signed-out users from seeing authenticated app
+content. A router or custom authorization layer should wait until the product
+has multiple authenticated views or server-backed authorization requirements.
 
 ### Expected Changes
 
-- Add a clearly labeled Clerk sign-out control to the authenticated header.
-- Preserve the existing Clerk `UserButton` and minimal signed-in state unless
-  implementation review identifies a layout conflict.
-- Ensure the signed-out entry points remain visibly available and continue to
-  open Clerk's sign-in and sign-up flows.
-- Make only small CSS adjustments if needed to align the Clerk control with the
-  current header.
-- Verify the signed-out, signed-in, and sign-out state transitions and the
-  configured post-sign-out destination.
-- Do not add application-owned authentication state, password handling,
-  provider SDKs, database calls, protected routes, profile management, or
-  unrelated features.
+- Keep signed-out users within the existing Sign In / Sign Up experience.
+- Keep authenticated content inside the signed-in Clerk boundary.
+- Add or preserve a neutral Clerk-loading state if session resolution can
+  otherwise cause protected content to flash.
+- Preserve the existing signed-in controls and minimal signed-in state.
+- Verify signed-out, loading, signed-in, and post-sign-out rendering states.
+- Do not add routes, custom authorization, database access, or future product
+  features.
 
 ### Files Expected To Change
 
-- `src/App.jsx` - add Clerk's explicit sign-out control while preserving the
-  existing `UserButton` and signed-out actions.
-- `src/App.css` - style the explicit sign-out control if needed.
+- `src/App.jsx` - maintain or refine the Clerk signed-in boundary and loading
+  behavior while preserving the current authentication controls.
+- `src/App.css` - only if a loading state requires matching minimal styling.
 - `agent-review.md` - this proposal record; implementation should update its
   result sections only after human approval and implementation.
 
@@ -90,12 +92,15 @@ boundary.
 
 ### Risks / Considerations
 
-- The existing `UserButton` already exposes sign-out through its menu; adding a
-  second direct action could be redundant, so the header layout should remain
-  restrained and unambiguous.
-- Clerk UI behavior may depend on the current Clerk package version and
-  instance configuration, so implementation verification must use the real
-  configured environment rather than only a static build.
+- Conditional rendering protects the client-side view only; it does not
+  authorize future API or database requests. Server-side authorization will be
+  required before user-specific data is added.
+- Clerk session resolution can produce a short loading period. The chosen
+  loading behavior should avoid exposing protected UI during that transition.
+- The current app has no router, so this proposal protects the rendered app
+  boundary rather than introducing URL-level route protection.
+- Clerk component behavior depends on the installed package and runtime
+  configuration, so verification should use the configured environment.
 - The existing missing-publishable-key guard will still prevent the app from
   starting when `VITE_CLERK_PUBLISHABLE_KEY` is unavailable.
 - Sign-out should be tested for both the UI state transition and the configured
@@ -114,9 +119,8 @@ boundary.
 
 ### Human Notes
 
-Approved the recommended direct Clerk `SignOutButton` approach.
-
-### Decision Required
+Approved the existing `Show`-based Clerk boundary and the decision to keep
+route-level and server-side authorization out of scope.
 
 ## Current Implementation Result
 
@@ -124,26 +128,29 @@ Approved the recommended direct Clerk `SignOutButton` approach.
 
 ### What Was Implemented
 
-- Added a clearly labeled Clerk `SignOutButton` beside the existing
-  `UserButton`.
-- Preserved the existing signed-out Sign In and Sign Up actions and the
-  minimal signed-in state.
-- Kept sign-out behavior and post-sign-out navigation within Clerk.
+- Added Clerk's `useAuth().isLoaded` guard so the app waits for session
+  resolution before rendering authenticated or signed-out content.
+- Preserved the existing mutually exclusive `Show` signed-in/signed-out
+  boundary and current authentication controls.
+- Added a neutral loading state without introducing routing or custom
+  authorization.
 
 ### Files Changed
 
-- `src/App.jsx` - imported and rendered Clerk's `SignOutButton`.
+- `src/App.jsx` - added the Clerk session-loading guard.
+- `src/App.css` - styled the neutral loading state.
 - `agent-review.md` - recorded approval and implementation status.
 
 ### Verification
 
 - `npm run lint` passed.
-- Live sign-out verification still requires the configured Clerk environment.
+- Production build and live Clerk state-transition verification remain to be
+  completed.
 
 ### Issues / Follow-ups
 
-- No known code issues. The existing Clerk publishable key and session
-  configuration remain runtime prerequisites.
+- Client-side conditional rendering does not replace future server-side
+  authorization for database or API requests.
 
 ## Previous Implementation Result
 
@@ -179,13 +186,11 @@ Approved the recommended direct Clerk `SignOutButton` approach.
 
 ## Human Acceptance
 
-**Decision:** PENDING
+**Decision:** ACCEPTED
 
-- [ ] ACCEPTED
+- [x] ACCEPTED
 - [ ] NEEDS FIXES
 - [ ] REQUIRES FURTHER REVIEW
-
-### Human Notes
 
 ---
 
