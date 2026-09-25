@@ -152,7 +152,7 @@ export default function CategoriesPage({ currentView, onSelectView }) {
 
   return (
     <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[#f8f7f3] text-left text-[#23312f] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
+      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
       aria-label="SalimSpend categories"
     >
       <SidebarNav
@@ -165,13 +165,13 @@ export default function CategoriesPage({ currentView, onSelectView }) {
       <div className="min-w-0 px-[46px] pb-14 pt-[42px] max-[980px]:px-7 max-[980px]:pb-[46px] max-[680px]:px-[18px] max-[680px]:pb-[38px] max-[680px]:pt-7">
         <header className="mb-[24px] flex flex-wrap items-start justify-between gap-4 max-[860px]:flex-col max-[860px]:items-start max-[680px]:mb-6">
           <div className="min-w-0">
-            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
               Organization
             </p>
-            <h1 className="mt-2 max-w-[540px] font-serif text-[clamp(32px,4vw,46px)] font-normal leading-[1.03] text-[#213b36]">
+            <h1 className="mt-2 max-w-[540px] font-serif text-[clamp(32px,4vw,46px)] font-normal leading-[1.03] text-[var(--text-heading)]">
               Categories
             </h1>
-            <p className="mt-2 text-sm text-[#7b8580]">
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
               Keep your spending grouped and easy to understand.
             </p>
           </div>
@@ -186,17 +186,17 @@ export default function CategoriesPage({ currentView, onSelectView }) {
           </button>
         </header>
 
-        <div className="rounded-[10px] border border-[#e2e2db] bg-[#fffefa] p-[18px] max-[680px]:p-[14px]">
+        <div className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-[18px] max-[680px]:p-[14px]">
           {categories.length === 0 ?
             <div className="grid min-h-[260px] place-items-center rounded-[8px] border border-dashed border-[#d7e0dc] bg-[#f8faf8] px-6 py-10 text-center">
               <div>
                 <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#edf6f1] text-[20px] text-[#0f766e]">
                   <FiFolderPlus aria-hidden="true" />
                 </div>
-                <h2 className="font-serif text-[26px] font-normal text-[#213b36]">
+                <h2 className="font-serif text-[26px] font-normal text-[var(--text-heading)]">
                   No categories yet
                 </h2>
-                <p className="mt-2 max-w-[360px] text-sm text-[#6d7974]">
+                <p className="mt-2 max-w-[360px] text-sm text-[var(--text-secondary)]">
                   Create your first category to begin organizing income and
                   spending.
                 </p>
@@ -213,7 +213,7 @@ export default function CategoriesPage({ currentView, onSelectView }) {
           : <div className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-3">
               {categories.map((category) => (
                 <article
-                  className="rounded-[10px] border border-[#e3e0d8] bg-[#fdfcf9] p-[18px] shadow-[0_6px_16px_rgba(36,56,53,0.03)]"
+                  className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-[18px] shadow-[var(--card-shadow)]"
                   key={category.id}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -228,10 +228,10 @@ export default function CategoriesPage({ currentView, onSelectView }) {
                         <FiTag aria-hidden="true" className="text-base" />
                       </span>
                       <div className="min-w-0">
-                        <h3 className="truncate text-base font-bold text-[#213b36]">
+                        <h3 className="truncate text-base font-bold text-[var(--text-heading)]">
                           {category.name}
                         </h3>
-                        <span className="mt-1 block text-[10px] font-extrabold uppercase tracking-[0.10em] text-[#8b8d83]">
+                        <span className="mt-1 block text-[10px] font-extrabold uppercase tracking-[0.10em] text-[var(--text-muted)]">
                           {category.isDefault ? "Default" : "Custom"}
                         </span>
                       </div>
@@ -259,7 +259,7 @@ export default function CategoriesPage({ currentView, onSelectView }) {
                     </div>
                   </div>
 
-                  <p className="mt-[14px] min-h-[42px] text-sm leading-[1.55] text-[#5f6d69]">
+                  <p className="mt-[14px] min-h-[42px] text-sm leading-[1.55] text-[var(--text-secondary)]">
                     {category.description || "No description provided."}
                   </p>
 

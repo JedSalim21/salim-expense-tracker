@@ -59,7 +59,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
 
   return (
     <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[#f8f7f3] text-left text-[#23312f] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
+      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
       aria-label="SalimSpend transactions"
     >
       <SidebarNav
@@ -72,13 +72,13 @@ export default function TransactionsPage({ currentView, onSelectView }) {
       <div className="min-w-0 px-[46px] pb-14 pt-[42px] max-[980px]:px-7 max-[980px]:pb-[46px] max-[680px]:px-[18px] max-[680px]:pb-[38px] max-[680px]:pt-7">
         <header className="mb-[24px] flex items-start justify-between gap-6 max-[680px]:mb-6 max-[680px]:block">
           <div>
-            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
               Money movement
             </p>
-            <h1 className="mt-2 font-serif text-[clamp(32px,4vw,46px)] font-normal leading-[1.03] text-[#213b36]">
+            <h1 className="mt-2 font-serif text-[clamp(32px,4vw,46px)] font-normal leading-[1.03] text-[var(--text-heading)]">
               Transactions
             </h1>
-            <p className="mt-2 text-sm text-[#7b8580]">
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
               Review recent spending and income across your financial activity.
             </p>
           </div>
@@ -91,13 +91,13 @@ export default function TransactionsPage({ currentView, onSelectView }) {
           </button>
         </header>
 
-        <div className="rounded-[10px] border border-[#e2e2db] bg-[#fffefa] p-[18px] max-[680px]:p-[14px]">
+        <div className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-[18px] max-[680px]:p-[14px]">
           <div className="mb-4 flex items-center justify-between gap-3 max-[680px]:block">
             <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8b8d83]">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                 Overview
               </p>
-              <h2 className="mt-1 font-serif text-[22px] font-normal text-[#243b36]">
+              <h2 className="mt-1 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                 All transactions
               </h2>
             </div>
@@ -122,7 +122,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
             </div>
           : <div className="overflow-x-auto">
               <div className="min-w-[760px]">
-                <div className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)] gap-4 border-b border-[#e6e5e0] px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#8b8d83]">
+                <div className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)] gap-4 border-b border-[var(--border)] px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                   <span>Description</span>
                   <span>Amount</span>
                   <span>Category</span>
@@ -132,7 +132,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
 
                 {transactionRows.map((transaction) => (
                   <div
-                    className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)] items-center gap-4 border-b border-[#f0efe9] px-3 py-4 text-[12px] text-[#465753] last:border-b-0"
+                    className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)] items-center gap-4 border-b border-[var(--border)] px-3 py-4 text-[12px] text-[var(--text-primary)] last:border-b-0"
                     key={transaction.id}
                   >
                     <div className="flex items-center gap-3">
@@ -144,7 +144,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
                         : <FiArrowDownLeft aria-hidden="true" />}
                       </span>
                       <div className="min-w-0">
-                        <strong className="block truncate text-sm font-semibold text-[#213b36]">
+                        <strong className="block truncate text-sm font-semibold text-[var(--text-heading)]">
                           {transaction.description}
                         </strong>
                         <span className="text-[10px] text-[#9a9d95]">
@@ -154,13 +154,15 @@ export default function TransactionsPage({ currentView, onSelectView }) {
                     </div>
 
                     <span
-                      className={`font-semibold ${transaction.type === "income" ? "text-[#0f766e]" : "text-[#5e6863]"}`}
+                      className={`font-semibold ${transaction.type === "income" ? "text-[var(--brand)]" : "text-[var(--text-secondary)]"}`}
                     >
                       {transaction.amount}
                     </span>
                     <span>{transaction.category}</span>
                     <span>{transaction.paymentMethod}</span>
-                    <span className="text-[#75827d]">{transaction.date}</span>
+                    <span className="text-[var(--text-secondary)]">
+                      {transaction.date}
+                    </span>
                   </div>
                 ))}
               </div>

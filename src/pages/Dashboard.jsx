@@ -1,5 +1,6 @@
 import {
   FiArrowRight,
+  FiCalendar,
   FiChevronDown,
   FiCreditCard,
   FiDollarSign,
@@ -111,7 +112,7 @@ const cashFlow = [
 export default function Dashboard({ currentView, onSelectView }) {
   return (
     <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[#f8f7f3] text-left text-[#23312f] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
+      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
       aria-label="SalimSpend dashboard"
     >
       <SidebarNav
@@ -127,20 +128,21 @@ export default function Dashboard({ currentView, onSelectView }) {
       >
         <header className="mb-[30px] flex items-start justify-between gap-6 max-[680px]:mb-6 max-[680px]:block">
           <div>
-            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
               Monday, September 23, 2026
             </p>
-            <h1 className="my-2 font-serif text-[clamp(32px,4vw,48px)] font-normal leading-[1.03] text-[#213b36]">
+            <h1 className="my-2 font-serif text-[clamp(32px,4vw,48px)] font-normal leading-[1.03] text-[var(--text-heading)]">
               Good morning, Salim.
             </h1>
-            <p className="text-sm text-[#7b8580]">
+            <p className="text-sm text-[var(--text-secondary)]">
               Here is the shape of your money this month.
             </p>
           </div>
           <button
-            className="mt-0 inline-flex min-h-[38px] items-center gap-[10px] whitespace-nowrap rounded-[5px] border border-[#dcded7] bg-[#fffefa] px-3 text-xs text-[#50615b] transition hover:border-[#0f766e] hover:text-[#0f766e] max-[680px]:mt-[18px]"
+            className="mt-0 inline-flex min-h-[38px] items-center gap-[8px] whitespace-nowrap rounded-[5px] border border-transparent bg-[#0f766e] px-3 text-xs font-bold text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2 max-[680px]:mt-[18px]"
             type="button"
           >
+            <FiCalendar aria-hidden="true" />
             This month
             <FiChevronDown aria-hidden="true" />
           </button>
@@ -152,15 +154,15 @@ export default function Dashboard({ currentView, onSelectView }) {
 
             return (
               <article
-                className={`relative min-h-[126px] overflow-hidden rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[18px] pb-4 max-[680px]:min-h-[116px] max-[680px]:p-[14px] ${toneClasses[card.tone]}`}
+                className={`relative min-h-[126px] overflow-hidden rounded-[7px] border border-[var(--border)] bg-[var(--surface)] p-[18px] pb-4 text-[var(--text-primary)] max-[680px]:min-h-[116px] max-[680px]:p-[14px] ${toneClasses[card.tone]}`}
                 key={card.label}
               >
                 <span className="pointer-events-none absolute -bottom-10 -right-6 h-24 w-24 rounded-full border border-current opacity-10"></span>
-                <div className="flex items-center justify-between text-[11px] font-bold text-[#89918b]">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-muted)]">
                   <span>{card.label}</span>
                   <Icon className="text-base" aria-hidden="true" />
                 </div>
-                <strong className="mt-4 block font-serif text-[25px] font-normal tracking-[-0.01em] text-[#253b37] max-[680px]:text-xl">
+                <strong className="mt-4 block font-serif text-[25px] font-normal tracking-[-0.01em] text-[var(--text-heading)] max-[680px]:text-xl">
                   {card.value}
                 </strong>
                 <span className="mt-[7px] block text-[11px] font-bold text-[#0f766e]">
@@ -175,16 +177,18 @@ export default function Dashboard({ currentView, onSelectView }) {
           <article className="rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[22px] pb-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
                   Cash flow
                 </p>
-                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[#243b36]">
+                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                   Income vs expenses
                 </h2>
               </div>
-              <span className="text-[11px] text-[#9a9c93]">Last 6 months</span>
+              <span className="text-[11px] text-[var(--text-muted)]">
+                Last 6 months
+              </span>
             </div>
-            <div className="mt-3 flex justify-end gap-4 text-[11px] text-[#89918b] max-[680px]:justify-start">
+            <div className="mt-3 flex justify-end gap-4 text-[11px] text-[var(--text-muted)] max-[680px]:justify-start">
               <span className="inline-flex items-center gap-[5px]">
                 <i className="h-[7px] w-[7px] rounded-full bg-[#0f766e]"></i>
                 Income
@@ -240,10 +244,10 @@ export default function Dashboard({ currentView, onSelectView }) {
           <article className="rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[22px] pb-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
                   Spending breakdown
                 </p>
-                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[#243b36]">
+                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                   Where it goes
                 </h2>
               </div>
@@ -265,7 +269,7 @@ export default function Dashboard({ currentView, onSelectView }) {
                 aria-label="Spending breakdown: Home 34 percent, Food 22 percent, Transport 14 percent, Lifestyle 12 percent"
               >
                 <div className="grid h-[88px] w-[88px] place-items-center rounded-full bg-[#fffefa] max-[680px]:h-[78px] max-[680px]:w-[78px]">
-                  <strong className="font-serif text-xl font-normal text-[#243b36] max-[680px]:text-[17px]">
+                  <strong className="font-serif text-xl font-normal text-[var(--text-heading)] max-[680px]:text-[17px]">
                     ₱3,290
                   </strong>
                   <span className="-mt-5 text-[10px] text-[#9a9d95]">
@@ -286,7 +290,7 @@ export default function Dashboard({ currentView, onSelectView }) {
                       ></i>
                       {category.label}
                     </span>
-                    <strong className="text-right text-[11px] text-[#42534d]">
+                    <strong className="text-right text-[11px] text-[var(--text-primary)]">
                       {category.percent}%
                     </strong>
                     <span>{category.amount}</span>
@@ -309,10 +313,10 @@ export default function Dashboard({ currentView, onSelectView }) {
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+              <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
                 Activity
               </p>
-              <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[#243b36]">
+              <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                 Recent transactions
               </h2>
             </div>

@@ -1964,3 +1964,414 @@ Examples:
 - Responsive behavior verified.
 
 Do not claim a test or verification passed unless it was actually performed.
+
+# Task 009 — Settings UI
+
+## Task Status
+
+**IMPLEMENTED**
+
+---
+
+## Implementation Result
+
+### Status
+
+`IMPLEMENTED`
+
+### What Was Implemented
+
+The Settings UI was added as a dedicated signed-in view and connected to the existing sidebar navigation. It includes an appearance section with Light and Dark mode options, a clear active-state indicator, and app-wide theme switching that is persisted in local storage so the user's selection survives a page refresh.
+
+### Why This Change Was Needed
+
+The app already had a Settings navigation item, but it did not render a dedicated screen or support any theme state. The task needed a simple, consistent, application-wide preference control that fit the existing SalimSpend architecture without introducing database-backed configuration or extra dependencies.
+
+### Impact
+
+- UI: Users can now switch between Light and Dark mode from the Settings screen.
+- application behavior: The selected theme applies across the app shell and the major signed-in views.
+- persistence: Theme choice is saved in local storage and restored on refresh.
+- architecture: Theme handling remains frontend-only and fits the current Vite + React structure.
+
+### Files Changed
+
+- `src/App.jsx`
+- `src/components/SidebarNav.jsx`
+- `src/index.css`
+- `src/pages/SettingsPage.jsx`
+- `docs/tasks/task-009-settings-ui.md`
+
+### Verification
+
+- `npm run build` executed successfully.
+- `npm run lint` executed successfully.
+- Theme flow reviewed in the implemented Settings UI.
+- Local persistence flow implemented via browser storage.
+
+---
+
+## Task Objective
+
+Build the **Settings UI** for SalimSpend as the final planned UI-focused feature.
+
+The Settings page should provide a clear and simple place for user preferences, with the primary required setting being **Dark / Light Mode**.
+
+The implementation should fit the existing SalimSpend architecture and UI patterns without introducing unnecessary complexity or unrelated functionality.
+
+---
+
+## Current Scope
+
+### In Scope
+
+#### 1. Settings Page
+
+Create a dedicated Settings page that fits naturally into the existing application structure and navigation.
+
+The page should have:
+
+- Clear page heading
+- Organized settings sections
+- Clean and consistent layout
+- Responsive behavior
+- Consistent styling with the existing SalimSpend UI
+
+---
+
+#### 2. Dark / Light Mode
+
+Add a theme setting that allows the user to switch between:
+
+- **Light Mode**
+- **Dark Mode**
+
+The theme selection must have **actual application-wide behavior**.
+
+Changing the theme from Settings should affect the existing application UI, including:
+
+- Dashboard
+- Transactions
+- Categories
+- Reports
+- Settings
+- Shared navigation/layout components
+
+The implementation should use the existing Tailwind setup and project architecture where practical.
+
+---
+
+#### 3. Theme Persistence
+
+The selected theme should persist when the user refreshes or returns to the application.
+
+Use a simple client-side persistence approach appropriate for the current project.
+
+Do not introduce database persistence unless there is an existing architectural reason that requires it.
+
+The initial theme behavior should also be considered so that the application does not unnecessarily flash between themes during startup.
+
+---
+
+#### 4. Theme UI / UX
+
+The theme selector should clearly communicate:
+
+- Current selected theme
+- Available theme options
+- Which option is active
+
+The interaction should be simple and understandable.
+
+Use the existing icon/component patterns where appropriate.
+
+---
+
+#### 5. Responsive Design
+
+The Settings UI should work appropriately across:
+
+- Desktop
+- Tablet
+- Mobile
+
+Do not create separate layouts unless necessary.
+
+---
+
+#### 6. Accessibility
+
+The Settings controls should follow reasonable accessibility practices, including:
+
+- Keyboard accessibility
+- Clear labels
+- Visible selected/active state
+- Appropriate semantic elements
+- Sufficient visual distinction between states
+- Theme controls should not rely on color alone to communicate selection
+
+---
+
+## UI / Architecture Principles
+
+The implementation should follow the existing SalimSpend architecture and design patterns.
+
+Use:
+
+- React
+- Existing application structure
+- Tailwind CSS
+- Existing shared components where appropriate
+- Existing icon dependencies/patterns
+
+Avoid:
+
+- Unnecessary new dependencies
+- Unnecessary global state
+- Premature abstractions
+- Large architectural changes
+- Unrelated component refactors
+
+The theme state should have a clear owner and predictable data flow.
+
+If a small reusable theme mechanism is required for app-wide behavior, it should be kept focused and minimal.
+
+---
+
+## Persistence
+
+Theme preference should be persisted on the client.
+
+The preferred approach should:
+
+- Survive page refresh
+- Be simple
+- Avoid database changes
+- Avoid unnecessary backend work
+- Fit the current React/Vite architecture
+
+The implementation should also consider the application's initial theme before React finishes rendering where practical, to reduce visible theme flashing.
+
+---
+
+## Existing Application Compatibility
+
+The Settings implementation must preserve existing functionality.
+
+Do not break or redesign:
+
+- Dashboard
+- Transactions
+- Categories
+- Reports
+- Sidebar navigation
+- Clerk authentication
+- Existing signed-in/signed-out behavior
+- Existing application state
+- Existing data behavior
+
+Existing pages should remain functionally unchanged except for becoming compatible with the selected theme.
+
+---
+
+## Out of Scope
+
+The following are explicitly outside the scope of Task 009:
+
+- Supabase settings persistence
+- Database schema changes
+- Backend/API work
+- User preference tables
+- Clerk account management
+- Password management
+- Email/account changes
+- Notification systems
+- Export functionality
+- Advanced personalization
+- Localization/language settings
+- Currency configuration
+- Complex application preferences
+- Unrelated UI redesign
+- Major refactoring
+- New state-management libraries
+- New dependencies unless genuinely required and approved
+- Changes to authentication or authorization
+- Changes to RLS
+- Changes to existing data architecture
+
+If an implementation detail requires work outside this scope, stop and report it instead of expanding the task automatically.
+
+---
+
+## Expected Files
+
+The exact files should be determined after inspecting the existing project structure.
+
+Potential changes may include:
+
+- Settings page/component
+- Theme-related component or utility
+- Application-level theme handling
+- Existing shared layout/navigation styling where required
+- Tailwind/theme configuration only if necessary
+- Relevant task documentation
+
+Do not create files or abstractions unless they are justified by the implementation.
+
+---
+
+## Verification
+
+After implementation, verify:
+
+### UI
+
+- Settings page renders correctly
+- Theme selector works
+- Light Mode works
+- Dark Mode works
+- Selected state is clear
+- Settings remains responsive
+
+### Application-wide Theme
+
+Verify that the selected theme correctly affects:
+
+- Dashboard
+- Transactions
+- Categories
+- Reports
+- Settings
+- Shared navigation/layout
+
+### Persistence
+
+- Refreshing the application preserves the selected theme
+- Initial theme behavior is reasonable
+- No unnecessary theme flashing where practical
+
+### Existing Functionality
+
+Verify that existing features continue working normally.
+
+### Technical Verification
+
+Run the appropriate project checks, including:
+
+- Lint
+- Build
+- Relevant application/manual verification
+
+Do not claim verification passed unless the checks were actually run.
+
+---
+
+## Documentation Requirements
+
+After implementation, update the relevant documentation under `docs/tasks/` with the actual implementation result.
+
+The implementation result should document:
+
+- What was implemented
+- Why it was implemented
+- Files changed
+- Actual behavior
+- Verification performed
+- Any deviations from the approved proposal
+- Any limitations or follow-up considerations
+
+Update `agent-review.md` with the actual implementation result after implementation.
+
+---
+
+## Documentation Transparency Rule
+
+Any modification to a Markdown file must be explicitly reported.
+
+The agent must report:
+
+- Which `.md` file changed
+- What changed
+- Why it changed
+- Impact of the change
+
+Markdown documentation changes require human review before they are considered accepted or committed.
+
+The agent must not silently modify `.md` files.
+
+---
+
+## Git / Commit Discipline
+
+The agent must not automatically commit or push changes.
+
+Before suggesting a commit:
+
+- Inspect the final diff
+- Confirm changes are within Task 009 scope
+- Check for accidental files
+- Check for generated files
+- Check for secrets
+- Verify implementation and documentation changes
+
+The human decides when the task is ready to commit.
+
+---
+
+## Human Approval
+
+### Current Status
+
+**APPROVED**
+
+Implementation must not begin while the status is `PENDING`.
+
+The human will explicitly change the status to:
+
+**APPROVED**
+
+before implementation begins.
+
+If the proposal needs changes, the human may mark it:
+
+**NEEDS REVISION**
+
+If the task is no longer desired, the human may mark it:
+
+**REJECTED**
+
+The agent must not infer approval from conversation context.
+
+---
+
+## Implementation Result
+
+_To be completed after human approval and implementation._
+
+### Status
+
+_To be updated after implementation._
+
+### What Changed
+
+_To be completed._
+
+### Why
+
+_To be completed._
+
+### Impact
+
+_To be completed._
+
+### Files Changed
+
+_To be completed._
+
+### Verification
+
+_To be completed._
+
+### Deviations / Notes
+
+_To be completed._

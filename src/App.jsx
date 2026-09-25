@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Show,
   SignIn,
@@ -12,11 +12,31 @@ import { FiDollarSign, FiLogIn, FiLogOut, FiUserPlus } from "react-icons/fi";
 import CategoriesPage from "./pages/CategoriesPage";
 import Dashboard from "./pages/Dashboard";
 import ReportsPage from "./pages/ReportsPage";
+import SettingsPage from "./pages/SettingsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 
 function App() {
   const { isLoaded } = useAuth();
   const [activeView, setActiveView] = useState("dashboard");
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") {
+      return "light";
+    }
+
+    const savedTheme = window.localStorage.getItem("salimspend-theme");
+    if (savedTheme === "light" || savedTheme === "dark") {
+      return savedTheme;
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ?
+        "dark"
+      : "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    window.localStorage.setItem("salimspend-theme", theme);
+  }, [theme]);
 
   if (!isLoaded) {
     return (
@@ -31,12 +51,12 @@ function App() {
 
   return (
     <>
-      <header className="flex min-h-[72px] items-center justify-between border-b border-[#e5e2da] bg-[#fffefa] px-8 max-[720px]:min-h-0 max-[720px]:flex-wrap max-[720px]:gap-4 max-[720px]:px-5 max-[720px]:py-[18px]">
+      <header className="flex min-h-[72px] items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-8 text-[var(--text-primary)] max-[720px]:min-h-0 max-[720px]:flex-wrap max-[720px]:gap-4 max-[720px]:px-5 max-[720px]:py-[18px]">
         <a
-          className="inline-flex items-center gap-2 text-lg font-bold text-[#213b36] no-underline"
+          className="inline-flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] no-underline"
           href="/"
         >
-          <FiDollarSign className="text-[#0f766e]" aria-hidden="true" />
+          <FiDollarSign className="text-[var(--brand)]" aria-hidden="true" />
           SalimSpend
         </a>
         <nav
@@ -47,7 +67,7 @@ function App() {
             <SignInButton mode="modal">
               <button
                 type="button"
-                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[#dcded7] bg-[#fffefa] px-4 text-[15px] leading-none text-[#213b36] transition hover:border-[#0f766e] hover:bg-[#dfeae4] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
+                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-[15px] leading-none text-[var(--text-primary)] transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2"
               >
                 <FiLogIn aria-hidden="true" />
                 Sign in
@@ -56,7 +76,7 @@ function App() {
             <SignUpButton mode="modal">
               <button
                 type="button"
-                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-[15px] font-bold leading-none text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
+                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-transparent bg-[var(--brand)] px-4 text-[15px] font-bold leading-none text-white transition hover:bg-[var(--brand-strong)] focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2"
               >
                 <FiUserPlus aria-hidden="true" />
                 Sign up
@@ -67,7 +87,7 @@ function App() {
             <SignOutButton>
               <button
                 type="button"
-                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[#dcded7] bg-[#fffefa] px-4 text-[15px] leading-none text-[#213b36] transition hover:border-[#0f766e] hover:bg-[#dfeae4] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
+                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-[15px] leading-none text-[var(--text-primary)] transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2"
               >
                 <FiLogOut aria-hidden="true" />
                 Sign out
@@ -152,6 +172,17 @@ function App() {
             <ReportsPage
               currentView={activeView}
               onSelectView={setActiveView}
+            />
+          : activeView === "settings" ?
+            <SettingsPage
+              currentView={activeView}
+              onSelectView={setActiveView}
+              theme={theme}
+              onToggleTheme={() =>
+                setTheme((currentTheme) =>
+                  currentTheme === "dark" ? "light" : "dark",
+                )
+              }
             />
           : <Dashboard currentView={activeView} onSelectView={setActiveView} />}
         </Show>

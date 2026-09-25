@@ -83,7 +83,7 @@ const recentInsights = [
 export default function ReportsPage({ currentView, onSelectView }) {
   return (
     <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[#f8f7f3] text-left text-[#23312f] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
+      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
       aria-label="SalimSpend reports"
     >
       <SidebarNav
@@ -96,19 +96,19 @@ export default function ReportsPage({ currentView, onSelectView }) {
       <div className="min-w-0 px-[46px] pb-14 pt-[42px] max-[980px]:px-7 max-[980px]:pb-[46px] max-[680px]:px-[18px] max-[680px]:pb-[38px] max-[680px]:pt-7">
         <header className="mb-[24px] flex flex-wrap items-start justify-between gap-4 max-[860px]:flex-col max-[860px]:items-start max-[680px]:mb-6">
           <div className="min-w-0">
-            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+            <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
               Insights
             </p>
-            <h1 className="mt-2 max-w-[540px] font-serif text-[clamp(32px,4vw,46px)] font-normal leading-[1.03] text-[#213b36]">
+            <h1 className="mt-2 max-w-[540px] font-serif text-[clamp(32px,4vw,46px)] font-normal leading-[1.03] text-[var(--text-heading)]">
               Reports
             </h1>
-            <p className="mt-2 text-sm text-[#7b8580]">
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
               Track spending trends and understand where your money is going.
             </p>
           </div>
 
           <button
-            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-[#dcded7] bg-[#fffefa] px-4 text-sm font-bold text-[#50615b] transition hover:border-[#0f766e] hover:text-[#0f766e]"
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
             type="button"
           >
             <FiCalendar aria-hidden="true" />
@@ -123,18 +123,18 @@ export default function ReportsPage({ currentView, onSelectView }) {
 
             return (
               <article
-                className={`relative min-h-[126px] overflow-hidden rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[18px] pb-4 max-[680px]:min-h-[116px] max-[680px]:p-[14px] ${toneClasses[item.tone]}`}
+                className={`relative min-h-[126px] overflow-hidden rounded-[7px] border border-[var(--border)] bg-[var(--surface)] p-[18px] pb-4 max-[680px]:min-h-[116px] max-[680px]:p-[14px] ${toneClasses[item.tone]}`}
                 key={item.label}
               >
                 <span className="pointer-events-none absolute -bottom-10 -right-6 h-24 w-24 rounded-full border border-current opacity-10"></span>
-                <div className="flex items-center justify-between text-[11px] font-bold text-[#89918b]">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-muted)]">
                   <span>{item.label}</span>
                   <Icon className="text-base" aria-hidden="true" />
                 </div>
-                <strong className="mt-4 block font-serif text-[25px] font-normal tracking-[-0.01em] text-[#253b37] max-[680px]:text-xl">
+                <strong className="mt-4 block font-serif text-[25px] font-normal tracking-[-0.01em] text-[var(--text-heading)] max-[680px]:text-xl">
                   {item.value}
                 </strong>
-                <span className="mt-[7px] block text-[11px] font-bold text-[#0f766e]">
+                <span className="mt-[7px] block text-[11px] font-bold text-[var(--brand)]">
                   {item.trend}
                 </span>
               </article>
@@ -143,23 +143,23 @@ export default function ReportsPage({ currentView, onSelectView }) {
         </div>
 
         <div className="mb-[14px] grid grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)] gap-[14px] max-[980px]:grid-cols-1">
-          <article className="rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[22px] pb-5">
+          <article className="rounded-[7px] border border-[var(--border)] bg-[var(--surface)] p-[22px] pb-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
                   Spend trend
                 </p>
-                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[#243b36]">
+                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                   Monthly spending
                 </h2>
               </div>
-              <span className="inline-flex items-center gap-2 text-[11px] font-bold text-[#0f766e]">
+              <span className="inline-flex items-center gap-2 text-[11px] font-bold text-[var(--brand)]">
                 <FiBarChart2 aria-hidden="true" />
                 6M view
               </span>
             </div>
 
-            <div className="mt-6 flex h-[220px] items-end gap-[10px] rounded-[8px] border border-[#eef0eb] bg-[#fbfaf7] p-4 pt-5">
+            <div className="mt-6 flex h-[220px] items-end gap-[10px] rounded-[8px] border border-[var(--border)] bg-[var(--panel-soft)] p-4 pt-5">
               {monthlyTrend.map((entry) => (
                 <div
                   className="flex flex-1 flex-col items-center justify-end gap-2"
@@ -167,11 +167,11 @@ export default function ReportsPage({ currentView, onSelectView }) {
                 >
                   <div className="flex h-full w-full items-end justify-center">
                     <span
-                      className="block w-full max-w-[26px] rounded-t-[6px] bg-[#0f766e] shadow-[0_8px_18px_rgba(15,118,110,0.18)]"
+                      className="block w-full max-w-[26px] rounded-t-[6px] bg-[var(--brand)] shadow-[0_8px_18px_rgba(15,118,110,0.18)]"
                       style={{ height: `${entry.value}%` }}
                     ></span>
                   </div>
-                  <span className="font-mono text-[9px] text-[#909890]">
+                  <span className="font-mono text-[9px] text-[var(--text-muted)]">
                     {entry.month}
                   </span>
                 </div>
@@ -179,23 +179,23 @@ export default function ReportsPage({ currentView, onSelectView }) {
             </div>
           </article>
 
-          <article className="rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[22px] pb-5">
+          <article className="rounded-[7px] border border-[var(--border)] bg-[var(--surface)] p-[22px] pb-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
                   Breakdown
                 </p>
-                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[#243b36]">
+                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                   By category
                 </h2>
               </div>
-              <FiPieChart aria-hidden="true" className="text-[#0f766e]" />
+              <FiPieChart aria-hidden="true" className="text-[var(--brand)]" />
             </div>
 
             <div className="mt-5 grid gap-3">
               {spendingBreakdown.map((item) => (
                 <div className="grid gap-1.5" key={item.label}>
-                  <div className="flex items-center justify-between gap-3 text-[11px] text-[#64716b]">
+                  <div className="flex items-center justify-between gap-3 text-[11px] text-[var(--text-secondary)]">
                     <span className="inline-flex items-center gap-[7px]">
                       <i
                         className="inline-block h-[7px] w-[7px] rounded-full"
@@ -203,11 +203,11 @@ export default function ReportsPage({ currentView, onSelectView }) {
                       ></i>
                       {item.label}
                     </span>
-                    <span className="font-bold text-[#213b36]">
+                    <span className="font-bold text-[var(--text-heading)]">
                       {item.percent}%
                     </span>
                   </div>
-                  <div className="h-[7px] overflow-hidden rounded-full bg-[#edf0eb]">
+                  <div className="h-[7px] overflow-hidden rounded-full bg-[var(--surface-alt)]">
                     <span
                       className="block h-full rounded-full"
                       style={{
@@ -216,7 +216,7 @@ export default function ReportsPage({ currentView, onSelectView }) {
                       }}
                     ></span>
                   </div>
-                  <div className="text-right text-[10px] font-bold text-[#5e6863]">
+                  <div className="text-right text-[10px] font-bold text-[var(--text-secondary)]">
                     {item.amount}
                   </div>
                 </div>
@@ -226,13 +226,13 @@ export default function ReportsPage({ currentView, onSelectView }) {
         </div>
 
         <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)] gap-[14px] max-[980px]:grid-cols-1">
-          <article className="rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[22px] pb-5">
+          <article className="rounded-[7px] border border-[var(--border)] bg-[var(--surface)] p-[22px] pb-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
                   Top categories
                 </p>
-                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[#243b36]">
+                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                   Biggest spend areas
                 </h2>
               </div>
@@ -241,18 +241,18 @@ export default function ReportsPage({ currentView, onSelectView }) {
             <div className="mt-4 space-y-3">
               {topCategories.map((item) => (
                 <div
-                  className="flex items-center justify-between gap-3 rounded-[6px] border border-[#edf0eb] bg-[#fbfaf7] px-3 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-[6px] border border-[var(--border)] bg-[var(--panel-soft)] px-3 py-2.5"
                   key={item.name}
                 >
                   <div>
-                    <div className="text-[12px] font-bold text-[#213b36]">
+                    <div className="text-[12px] font-bold text-[var(--text-heading)]">
                       {item.name}
                     </div>
-                    <div className="mt-1 text-[10px] text-[#8a8f8b]">
+                    <div className="mt-1 text-[10px] text-[var(--text-muted)]">
                       {item.amount}
                     </div>
                   </div>
-                  <span className="text-[10px] font-extrabold text-[#0f766e]">
+                  <span className="text-[10px] font-extrabold text-[var(--brand)]">
                     {item.change}
                   </span>
                 </div>
@@ -260,23 +260,26 @@ export default function ReportsPage({ currentView, onSelectView }) {
             </div>
           </article>
 
-          <article className="rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[22px] pb-5">
+          <article className="rounded-[7px] border border-[var(--border)] bg-[var(--surface)] p-[22px] pb-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[#8b8d83]">
+                <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
                   Signals
                 </p>
-                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[#243b36]">
+                <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
                   Quick insights
                 </h2>
               </div>
-              <FiArrowDownRight aria-hidden="true" className="text-[#0f766e]" />
+              <FiArrowDownRight
+                aria-hidden="true"
+                className="text-[var(--brand)]"
+              />
             </div>
 
-            <ul className="mt-4 space-y-3 text-sm text-[#5f6d69]">
+            <ul className="mt-4 space-y-3 text-sm text-[var(--text-secondary)]">
               {recentInsights.map((insight) => (
                 <li className="flex gap-3" key={insight}>
-                  <span className="mt-1.5 inline-block h-[7px] w-[7px] shrink-0 rounded-full bg-[#0f766e]"></span>
+                  <span className="mt-1.5 inline-block h-[7px] w-[7px] shrink-0 rounded-full bg-[var(--brand)]"></span>
                   <span>{insight}</span>
                 </li>
               ))}
