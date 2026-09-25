@@ -11,6 +11,7 @@ import {
 import { FiDollarSign, FiLogIn, FiLogOut, FiUserPlus } from "react-icons/fi";
 import CategoriesPage from "./pages/CategoriesPage";
 import Dashboard from "./pages/Dashboard";
+import ReportsPage from "./pages/ReportsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 
 function App() {
@@ -144,6 +145,11 @@ function App() {
             />
           : activeView === "categories" ?
             <CategoriesPage
+              currentView={activeView}
+              onSelectView={setActiveView}
+            />
+          : activeView === "reports" ?
+            <ReportsPage
               currentView={activeView}
               onSelectView={setActiveView}
             />

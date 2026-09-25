@@ -1291,3 +1291,676 @@ The app already had a Categories navigation entry in the sidebar, but the active
 - Categories delete confirmation flow reviewed in the implemented UI.
 - Empty-state behavior reviewed in the implemented UI.
 - Responsive layout preserved through the existing app shell patterns.
+
+# Agent Review
+
+This file is used to review AI agent proposals before implementation.
+
+The AI agent must analyze the current task, inspect the existing project structure and implementation, propose an implementation approach, identify meaningful alternatives, and explain expected changes.
+
+The human remains responsible for approving or rejecting the proposed approach.
+
+# Agent Review
+
+This file is used to review AI agent proposals before implementation.
+
+The AI agent must analyze the current task, inspect the existing project structure and implementation, propose an implementation approach, identify meaningful alternatives, and explain expected changes.
+
+The human remains responsible for approving or rejecting the proposed approach.
+
+---
+
+## Current Task
+
+**Task: Task 008 — Reports UI**
+
+Build the Reports UI for SalimSpend.
+
+The goal of this task is to establish the frontend structure and user interface for viewing expense reports and spending insights while following the existing SalimSpend architecture, styling patterns, and scope boundaries.
+
+This is a **UI and frontend interaction task only**.
+
+The Reports UI should provide a clear interface for viewing spending summaries, breakdowns, and useful reporting visualizations based on the information appropriate for the current application.
+
+Persistent reporting architecture, database queries, advanced analytics, and report-generation logic are intentionally outside the scope of this task unless the approved agent proposal identifies an existing dependency that must be preserved.
+
+**Status:** IMPLEMENTED
+
+---
+
+## Implementation Result
+
+### Status
+
+`IMPLEMENTED`
+
+### What Was Implemented
+
+The Reports UI was added as a dedicated signed-in view and connected to the existing sidebar navigation and app shell. The page includes summary metric cards, a monthly spending trend chart, category breakdown visuals, a top-spend panel, and a quick insights section using the project’s current Tailwind styling and icon conventions.
+
+### Why This Change Was Needed
+
+The app already had a Reports item in the sidebar, but the active view logic did not render a dedicated Reports page. This left the Reports entry non-functional even though the navigation was already present. The implementation keeps the UI within the existing page-based frontend architecture without introducing database or analytics backend work.
+
+### Impact
+
+- UI: Users can now open a Reports view from the signed-in navigation.
+- application behavior: The Reports entry now renders an actual screen instead of falling through to the Dashboard.
+- architecture: The Reports page stays frontend-only and consistent with the Dashboard, Transactions, and Categories screens.
+- future extension: The reporting data is organized in local UI state and can later be connected to real analytics without redesigning the app shell.
+
+### Files Changed
+
+- `src/App.jsx`
+- `src/pages/ReportsPage.jsx`
+- `docs/tasks/task-008-reports-ui.md`
+
+### Verification
+
+- `npm run build` executed successfully.
+- `npm run lint` executed successfully.
+- Reports screen reviewed for summary metrics, category breakdown, and responsive layout behavior.
+
+---
+
+## Agent Instructions
+
+Before making implementation changes:
+
+1. Inspect the current SalimSpend project structure.
+
+2. Read `docs/overview.md`.
+
+3. Read the relevant documentation under `docs/tasks/`.
+
+4. Read `AGENT.md`.
+
+5. Read `SKILL.md`.
+
+6. Read `agent-review.md`.
+
+7. Inspect the current application structure, including existing pages, components, navigation, and styling.
+
+8. Inspect the existing Dashboard, Transactions, and Categories UI.
+
+9. Inspect the existing Tailwind CSS setup and styling patterns.
+
+10. Inspect the currently installed dependencies and identify whether an existing chart or visualization library is already available.
+
+11. Determine where the Reports UI naturally fits within the existing application structure.
+
+12. Identify the reporting information that provides meaningful value for the current SalimSpend UI.
+
+13. Identify appropriate visual representations for the proposed reports.
+
+14. Identify meaningful interaction states such as empty, loading, filtered, or no-data states where appropriate.
+
+15. Identify meaningful implementation alternatives and their trade-offs.
+
+16. Identify the expected files to be created, modified, or removed.
+
+17. Explain how the proposed implementation will preserve existing application behavior.
+
+18. Do **not** implement the Reports UI yet.
+
+19. Update this `agent-review.md` with the proposal only.
+
+20. Wait for explicit human approval before making implementation changes.
+
+---
+
+## Approved Scope
+
+The approved task should:
+
+- Add the Reports UI to the existing SalimSpend application.
+
+- Follow the existing application structure and conventions.
+
+- Use Tailwind CSS as the primary styling approach.
+
+- Provide a clear reports overview.
+
+- Provide useful spending summaries.
+
+- Provide appropriate spending breakdowns.
+
+- Provide meaningful visual representations where appropriate.
+
+- Provide appropriate empty or no-data states.
+
+- Provide appropriate responsive behavior.
+
+- Reuse existing components, icons, patterns, and styling where appropriate.
+
+- Reuse an existing visualization dependency if one is already installed and appropriate.
+
+- Preserve the existing Dashboard UI.
+
+- Preserve the existing Transactions UI.
+
+- Preserve the existing Categories UI.
+
+- Preserve the existing sidebar/navigation behavior.
+
+- Preserve the existing Clerk authentication behavior.
+
+- Preserve the existing signed-in and signed-out behavior.
+
+The goal is to establish the **Reports UI**, not to redesign the entire application.
+
+---
+
+## Out of Scope
+
+Do not implement:
+
+- New database schema.
+
+- New reporting database tables.
+
+- Supabase reporting queries.
+
+- New backend services.
+
+- New API endpoints.
+
+- Advanced analytics architecture.
+
+- Persistent report configuration.
+
+- Export functionality unless explicitly approved.
+
+- PDF generation.
+
+- CSV generation.
+
+- Email reports.
+
+- Transaction CRUD.
+
+- Categories CRUD.
+
+- Settings functionality.
+
+- Authentication changes.
+
+- Authorization changes.
+
+- Changes to the Clerk integration.
+
+- Changes to the existing ownership model.
+
+- New global state management.
+
+- Unnecessary routing architecture.
+
+- Unrelated refactoring.
+
+- Unrelated UI redesign.
+
+- New dependencies unless the approved proposal demonstrates that they are necessary.
+
+Do not introduce a new charting library simply because it is available elsewhere.
+
+If visualization requires data that is not currently available from the application, use the simplest appropriate temporary/mock representation for the UI unless database work is explicitly approved.
+
+---
+
+## Reports UI Principles
+
+The proposed implementation should follow these principles:
+
+- Reports should be easy to understand at a glance.
+
+- Important spending information should have clear visual hierarchy.
+
+- Visualizations should communicate information rather than exist only for decoration.
+
+- Reports should remain consistent with the existing SalimSpend design language.
+
+- Existing UI components should be reused where appropriate.
+
+- Avoid creating components for every small HTML element.
+
+- Avoid excessive abstraction.
+
+- Keep report-specific UI close to the Reports feature.
+
+- Keep reusable visualization or display responsibilities separate when actual reuse exists.
+
+- Keep state local unless there is a clear reason for shared state.
+
+- Keep the UI structure compatible with future real reporting data.
+
+- Do not introduce permanent data architecture solely for this UI task.
+
+---
+
+## Report Information
+
+The agent should inspect the current application and determine which reporting information is appropriate for the current product.
+
+Potential examples may include:
+
+- Total spending.
+
+- Spending over time.
+
+- Spending by category.
+
+- Number of transactions.
+
+- Average spending.
+
+- Recent spending trends.
+
+These are examples only.
+
+The agent must not add metrics merely because they are common in expense trackers.
+
+The proposal should explain why each proposed metric is useful for the current SalimSpend UI.
+
+---
+
+## Visualization Principles
+
+If visualizations are proposed, the agent must explain:
+
+- What information each visualization communicates.
+
+- Why the chosen visualization is appropriate.
+
+- Whether the visualization can be implemented using existing dependencies.
+
+- Whether a new dependency is actually necessary.
+
+- How the visualization behaves with little or no data.
+
+- How the visualization behaves responsively.
+
+- How colors, labels, legends, and other visual indicators remain understandable.
+
+Do not introduce charts purely for visual decoration.
+
+Do not add a charting library without first inspecting the existing dependencies.
+
+---
+
+## Filters and Controls
+
+If the current application structure supports report filtering, the agent may propose controls such as:
+
+- Time period.
+
+- Date range.
+
+- Category.
+
+- Other meaningful report filters.
+
+The agent must determine whether filters are appropriate for the current UI.
+
+Do not introduce complex filtering architecture solely for this task.
+
+If filters require persistent data or database architecture that does not currently exist, the proposal must clearly identify that limitation.
+
+---
+
+## State and Data Principles
+
+This task does not establish the final reporting data architecture.
+
+The agent should:
+
+- Keep report UI state local where practical.
+
+- Avoid unnecessary global state.
+
+- Avoid introducing a new state-management library.
+
+- Avoid creating a database abstraction for temporary UI data.
+
+- Keep temporary/mock data clearly separated from persistent data.
+
+- Keep the UI structure compatible with future Supabase integration.
+
+- Clearly distinguish derived report values from persistent application data.
+
+If mock or local data is necessary for the UI, the proposal must explain where that data will live and why.
+
+---
+
+## Tailwind Principles
+
+Use the existing Tailwind CSS installation.
+
+The proposal should explain:
+
+- Which existing Tailwind patterns will be reused.
+
+- How the Reports UI will match the existing visual language.
+
+- How report cards and sections will be laid out.
+
+- How responsive behavior will work.
+
+- How visualizations will adapt to different screen sizes.
+
+- How hover, focus, active, and disabled states will be handled where relevant.
+
+- Whether any existing CSS must be modified.
+
+Do not introduce another styling system.
+
+Do not perform unrelated styling cleanup.
+
+Do not redesign existing Dashboard, Transactions, or Categories UI as part of this task.
+
+---
+
+## Accessibility Principles
+
+The Reports UI should:
+
+- Use semantic HTML where appropriate.
+
+- Provide accessible labels for interactive controls.
+
+- Maintain visible keyboard focus states.
+
+- Avoid relying only on color to communicate information.
+
+- Ensure charts and visualizations have meaningful accessible context.
+
+- Ensure report information remains understandable without relying exclusively on visual elements.
+
+The agent should explain any accessibility considerations relevant to the proposed implementation.
+
+---
+
+## Agent Proposal
+
+### Proposed Structure
+
+The agent must inspect the current project before proposing the structure.
+
+The proposal should show the expected structure in a format similar to:
+
+```text
+src/
+
+├── components/
+│   └── ...
+
+├── pages/
+│   └── ...
+
+├── App.jsx
+├── index.css
+└── ...
+```
+
+The example structure is illustrative only.
+
+Do not assume specific filenames or directories before inspecting the project.
+
+---
+
+### Proposed Approach
+
+**Agent must explain:**
+
+- Where the Reports UI will live.
+
+- Whether Reports should be a page, section, or another existing application boundary.
+
+- Which report sections are necessary.
+
+- Which components are necessary.
+
+- Which existing components can be reused.
+
+- Which metrics should be displayed.
+
+- Which visualizations should be used, if any.
+
+- How report state will be handled.
+
+- Whether filters are necessary.
+
+- How empty/no-data states will work.
+
+- How responsive behavior will work.
+
+- How the UI will integrate with the existing navigation.
+
+- How the implementation will preserve existing Dashboard, Transactions, and Categories behavior.
+
+- How the implementation avoids unnecessary abstraction.
+
+- How the implementation remains compatible with future Supabase reporting data.
+
+---
+
+## Options
+
+**Agent must provide meaningful alternatives only where they actually exist.**
+
+### Option 1 — Recommended
+
+- Describe the proposed approach.
+
+- Explain why it fits the current SalimSpend architecture.
+
+- Explain its trade-offs.
+
+### Option 2
+
+- Describe a reasonable alternative.
+
+- Explain its trade-offs.
+
+### Option 3 — Optional
+
+- Include only if another meaningful alternative exists.
+
+Do not invent alternatives merely to fill the section.
+
+---
+
+## Agent Recommendation
+
+**Agent must recommend one approach and explain why.**
+
+The recommendation should prioritize:
+
+- Simplicity.
+
+- Maintainability.
+
+- Clear information hierarchy.
+
+- Useful visualizations.
+
+- Consistency with the existing SalimSpend UI.
+
+- Reuse where appropriate.
+
+- Minimal abstraction.
+
+- Local state where practical.
+
+- Accessibility.
+
+- Responsive behavior.
+
+- Future compatibility with Supabase.
+
+- Preserving existing application behavior.
+
+- Minimal change.
+
+---
+
+## Expected Changes
+
+**Agent must describe the expected implementation changes without implementing them yet.**
+
+Include:
+
+- Components to create.
+
+- Pages to create.
+
+- Existing components to modify.
+
+- Existing pages to modify.
+
+- Changes to navigation.
+
+- Changes to styling.
+
+- State changes.
+
+- Temporary/mock data changes, if required.
+
+- Visualization-related changes.
+
+- Dependencies to reuse or add, if necessary.
+
+- Any files that may become obsolete.
+
+The agent must explain why each expected change is necessary.
+
+---
+
+## Files Expected To Change
+
+The agent must provide a list of expected files:
+
+### Create
+
+- ...
+
+### Modify
+
+- ...
+
+### Remove
+
+- ...
+
+If no files are expected to be removed, explicitly state that.
+
+The agent must not modify files outside the approved scope without human approval.
+
+---
+
+## Risks and Considerations
+
+The agent should identify meaningful implementation risks or considerations, such as:
+
+- Visualization complexity.
+
+- Limited or mock data.
+
+- Responsive chart behavior.
+
+- Accessibility of visualizations.
+
+- Interaction complexity.
+
+- State management complexity.
+
+- Compatibility with the existing navigation.
+
+- Future Supabase integration.
+
+- Potential duplication with existing UI components.
+
+- Additional dependency requirements.
+
+Only meaningful risks should be included.
+
+Do not create artificial risks merely to fill the section.
+
+---
+
+## Implementation Approval
+
+**Human Decision:** APPROVED
+
+Possible decisions:
+
+[x] `APPROVED`
+
+[] `NEEDS REVISION`
+
+[] `REJECTED`
+
+The AI agent must not interpret `PENDING` as approval.
+
+The AI agent must not implement the task until the human explicitly changes the decision to `APPROVED`.
+
+---
+
+## Implementation Result
+
+This section must remain empty until the task has been explicitly approved and implemented.
+
+After implementation, the agent should update this section with:
+
+### Status
+
+`IMPLEMENTED`
+
+### What Was Implemented
+
+Describe the actual implementation.
+
+### Why This Change Was Needed
+
+Explain the engineering reason for the implementation.
+
+### Impact
+
+Explain the effect on:
+
+- UI
+
+- application behavior
+
+- architecture
+
+- state
+
+- future reporting/data integration
+
+### Files Changed
+
+List every created, modified, or deleted file.
+
+### Verification
+
+Report only checks that were actually performed.
+
+Examples:
+
+- `npm run lint` passed.
+
+- `npm run build` passed.
+
+- Reports UI manually verified.
+
+- Report summary verified.
+
+- Spending breakdown verified.
+
+- Visualization states verified.
+
+- Empty/no-data state verified.
+
+- Responsive behavior verified.
+
+Do not claim a test or verification passed unless it was actually performed.
