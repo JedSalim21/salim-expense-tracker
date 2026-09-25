@@ -8,6 +8,8 @@ import {
   UserButton,
   useAuth,
 } from "@clerk/react";
+import { FiDollarSign, FiLogIn, FiLogOut, FiUserPlus } from "react-icons/fi";
+import CategoriesPage from "./pages/CategoriesPage";
 import Dashboard from "./pages/Dashboard";
 import TransactionsPage from "./pages/TransactionsPage";
 
@@ -29,7 +31,11 @@ function App() {
   return (
     <>
       <header className="flex min-h-[72px] items-center justify-between border-b border-[#e5e2da] bg-[#fffefa] px-8 max-[720px]:min-h-0 max-[720px]:flex-wrap max-[720px]:gap-4 max-[720px]:px-5 max-[720px]:py-[18px]">
-        <a className="text-lg font-bold text-[#213b36] no-underline" href="/">
+        <a
+          className="inline-flex items-center gap-2 text-lg font-bold text-[#213b36] no-underline"
+          href="/"
+        >
+          <FiDollarSign className="text-[#0f766e]" aria-hidden="true" />
           SalimSpend
         </a>
         <nav
@@ -40,16 +46,18 @@ function App() {
             <SignInButton mode="modal">
               <button
                 type="button"
-                className="min-h-[38px] cursor-pointer rounded-[6px] border border-[#dcded7] bg-[#fffefa] px-4 text-[15px] leading-none text-[#213b36] transition hover:border-[#0f766e] hover:bg-[#dfeae4] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
+                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[#dcded7] bg-[#fffefa] px-4 text-[15px] leading-none text-[#213b36] transition hover:border-[#0f766e] hover:bg-[#dfeae4] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
               >
+                <FiLogIn aria-hidden="true" />
                 Sign in
               </button>
             </SignInButton>
             <SignUpButton mode="modal">
               <button
                 type="button"
-                className="min-h-[38px] cursor-pointer rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-[15px] font-bold leading-none text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
+                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-[15px] font-bold leading-none text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
               >
+                <FiUserPlus aria-hidden="true" />
                 Sign up
               </button>
             </SignUpButton>
@@ -58,8 +66,9 @@ function App() {
             <SignOutButton>
               <button
                 type="button"
-                className="min-h-[38px] cursor-pointer rounded-[6px] border border-[#dcded7] bg-[#fffefa] px-4 text-[15px] leading-none text-[#213b36] transition hover:border-[#0f766e] hover:bg-[#dfeae4] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
+                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[#dcded7] bg-[#fffefa] px-4 text-[15px] leading-none text-[#213b36] transition hover:border-[#0f766e] hover:bg-[#dfeae4] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
               >
+                <FiLogOut aria-hidden="true" />
                 Sign out
               </button>
             </SignOutButton>
@@ -128,14 +137,17 @@ function App() {
           </section>
         </Show>
         <Show when="signed-in">
-          {activeView === "transactions" ? (
+          {activeView === "transactions" ?
             <TransactionsPage
               currentView={activeView}
               onSelectView={setActiveView}
             />
-          ) : (
-            <Dashboard currentView={activeView} onSelectView={setActiveView} />
-          )}
+          : activeView === "categories" ?
+            <CategoriesPage
+              currentView={activeView}
+              onSelectView={setActiveView}
+            />
+          : <Dashboard currentView={activeView} onSelectView={setActiveView} />}
         </Show>
       </main>
     </>

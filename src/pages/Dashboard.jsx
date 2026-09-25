@@ -1,3 +1,12 @@
+import {
+  FiArrowRight,
+  FiChevronDown,
+  FiCreditCard,
+  FiDollarSign,
+  FiMoreHorizontal,
+  FiTrendingDown,
+  FiTrendingUp,
+} from "react-icons/fi";
 import SidebarNav from "../components/SidebarNav";
 
 const summaryCards = [
@@ -32,6 +41,13 @@ const toneClasses = {
   blue: "text-[#3c72a2]",
   amber: "text-[#c08222]",
   rose: "text-[#b86c83]",
+};
+
+const summaryIcons = {
+  teal: FiDollarSign,
+  blue: FiTrendingUp,
+  amber: FiTrendingDown,
+  rose: FiCreditCard,
 };
 
 const recentTransactions = [
@@ -122,32 +138,37 @@ export default function Dashboard({ currentView, onSelectView }) {
             </p>
           </div>
           <button
-            className="mt-0 flex min-h-[38px] items-center gap-[18px] whitespace-nowrap rounded-[5px] border border-[#dcded7] bg-[#fffefa] px-3 text-xs text-[#50615b] transition hover:border-[#0f766e] hover:text-[#0f766e] max-[680px]:mt-[18px]"
+            className="mt-0 inline-flex min-h-[38px] items-center gap-[10px] whitespace-nowrap rounded-[5px] border border-[#dcded7] bg-[#fffefa] px-3 text-xs text-[#50615b] transition hover:border-[#0f766e] hover:text-[#0f766e] max-[680px]:mt-[18px]"
             type="button"
           >
-            This month <span aria-hidden="true">⌄</span>
+            This month
+            <FiChevronDown aria-hidden="true" />
           </button>
         </header>
 
         <div className="mb-[14px] grid grid-cols-4 gap-3 max-[980px]:grid-cols-2 max-[680px]:gap-2">
-          {summaryCards.map((card) => (
-            <article
-              className={`relative min-h-[126px] overflow-hidden rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[18px] pb-4 max-[680px]:min-h-[116px] max-[680px]:p-[14px] ${toneClasses[card.tone]}`}
-              key={card.label}
-            >
-              <span className="pointer-events-none absolute -bottom-10 -right-6 h-24 w-24 rounded-full border border-current opacity-10"></span>
-              <div className="flex items-center justify-between text-[11px] font-bold text-[#89918b]">
-                <span>{card.label}</span>
-                <span className="h-1 w-[22px] rounded-full bg-current opacity-70"></span>
-              </div>
-              <strong className="mt-4 block font-serif text-[25px] font-normal tracking-[-0.01em] text-[#253b37] max-[680px]:text-xl">
-                {card.value}
-              </strong>
-              <span className="mt-[7px] block text-[11px] font-bold text-[#0f766e]">
-                {card.detail}
-              </span>
-            </article>
-          ))}
+          {summaryCards.map((card) => {
+            const Icon = summaryIcons[card.tone];
+
+            return (
+              <article
+                className={`relative min-h-[126px] overflow-hidden rounded-[7px] border border-[#e2e2db] bg-[#fffefa] p-[18px] pb-4 max-[680px]:min-h-[116px] max-[680px]:p-[14px] ${toneClasses[card.tone]}`}
+                key={card.label}
+              >
+                <span className="pointer-events-none absolute -bottom-10 -right-6 h-24 w-24 rounded-full border border-current opacity-10"></span>
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#89918b]">
+                  <span>{card.label}</span>
+                  <Icon className="text-base" aria-hidden="true" />
+                </div>
+                <strong className="mt-4 block font-serif text-[25px] font-normal tracking-[-0.01em] text-[#253b37] max-[680px]:text-xl">
+                  {card.value}
+                </strong>
+                <span className="mt-[7px] block text-[11px] font-bold text-[#0f766e]">
+                  {card.detail}
+                </span>
+              </article>
+            );
+          })}
         </div>
 
         <div className="mb-[14px] grid grid-cols-[minmax(0,1.45fr)_minmax(300px,0.8fr)] gap-[14px] max-[980px]:grid-cols-1">
@@ -227,11 +248,11 @@ export default function Dashboard({ currentView, onSelectView }) {
                 </h2>
               </div>
               <button
-                className="h-[26px] w-[30px] rounded-[5px] border border-[#dcded7] bg-[#fffefa] text-xs tracking-[2px] text-[#50615b] hover:border-[#0f766e] hover:text-[#0f766e]"
+                className="grid h-[26px] w-[30px] place-items-center rounded-[5px] border border-[#dcded7] bg-[#fffefa] text-[#50615b] hover:border-[#0f766e] hover:text-[#0f766e]"
                 type="button"
                 aria-label="View spending details"
               >
-                ...
+                <FiMoreHorizontal aria-hidden="true" className="text-sm" />
               </button>
             </div>
             <div className="grid gap-4 py-4">
@@ -296,11 +317,12 @@ export default function Dashboard({ currentView, onSelectView }) {
               </h2>
             </div>
             <button
-              className="text-[11px] font-extrabold text-[#0f766e] no-underline hover:text-[#115e59] hover:underline"
+              className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#0f766e] no-underline hover:text-[#115e59] hover:underline"
               type="button"
               onClick={() => onSelectView("transactions")}
             >
-              View all <span aria-hidden="true">→</span>
+              View all
+              <FiArrowRight aria-hidden="true" />
             </button>
           </div>
           <div className="mt-[15px]">

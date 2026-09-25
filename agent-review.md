@@ -712,3 +712,582 @@ Include:
 ### Files Expected To Change
 
 **Agent mus**
+
+# Agent Review
+
+This file is used to review AI agent proposals before implementation.
+
+The AI agent must analyze the current task, inspect the existing project structure and implementation, propose an implementation approach, identify meaningful alternatives, and explain expected changes.
+
+The human remains responsible for approving or rejecting the proposed approach.
+
+---
+
+## Current Task
+
+**Task: Task 007 — Categories UI**
+
+Build the Categories UI for SalimSpend.
+
+The goal of this task is to establish the frontend structure and user interface for managing expense categories while following the existing SalimSpend architecture, styling patterns, and scope boundaries.
+
+This is a **UI and frontend interaction task only**.
+
+The Categories UI should provide a clear interface for viewing categories and the basic UI needed to add, edit, and remove categories.
+
+Category persistence, database integration, and category data architecture are intentionally outside the scope of this task unless the approved agent proposal identifies a necessary existing dependency that must be preserved.
+
+**Status:** PENDING REVIEW
+
+---
+
+## Agent Instructions
+
+Before making implementation changes:
+
+1. Inspect the current SalimSpend project structure.
+
+2. Read `docs/overview.md`.
+
+3. Read the relevant documentation under `docs/tasks/`.
+
+4. Read `AGENT.md`.
+
+5. Read `SKILL.md`.
+
+6. Read `agent-review.md`.
+
+7. Inspect the current application structure, including the existing pages, components, navigation, and styling.
+
+8. Inspect the existing Tailwind CSS setup and identify the styling patterns already used by the application.
+
+9. Inspect how the current Dashboard and Transactions UI are structured.
+
+10. Determine where the Categories UI naturally fits within the existing application structure.
+
+11. Determine whether Categories should be represented as a page, section, or another existing UI boundary.
+
+12. Identify the UI responsibilities required for viewing and managing categories.
+
+13. Identify meaningful interaction states such as empty, add, edit, delete, and cancellation states where appropriate.
+
+14. Identify meaningful implementation alternatives and their trade-offs.
+
+15. Identify the expected files to be created, modified, or removed.
+
+16. Explain how the proposed implementation will preserve existing application behavior.
+
+17. Do **not** implement the Categories UI yet.
+
+18. Update this `agent-review.md` with the proposal only.
+
+19. Wait for explicit human approval before making implementation changes.
+
+---
+
+## Approved Scope
+
+The approved task should:
+
+- Add the Categories UI to the existing SalimSpend application.
+
+- Follow the existing application structure and conventions.
+
+- Use Tailwind CSS as the primary styling approach.
+
+- Provide a clear category listing interface.
+
+- Provide the UI necessary to add a category.
+
+- Provide the UI necessary to edit a category.
+
+- Provide the UI necessary to remove a category.
+
+- Provide appropriate empty-state behavior when no categories exist.
+
+- Provide appropriate interaction states where relevant.
+
+- Preserve the existing Dashboard UI.
+
+- Preserve the existing Transactions UI.
+
+- Preserve the existing sidebar/navigation behavior.
+
+- Preserve the existing Clerk authentication behavior.
+
+- Preserve the existing signed-in and signed-out behavior.
+
+- Preserve the existing responsive behavior.
+
+- Reuse existing components, icons, patterns, and styling where appropriate.
+
+- Keep the implementation simple and maintainable.
+
+The goal is to establish the **Categories UI**, not to redesign the application.
+
+---
+
+## Out of Scope
+
+Do not implement:
+
+- Category database schema changes.
+
+- Supabase category queries.
+
+- Category persistence.
+
+- Transaction-category database relationships.
+
+- Transaction CRUD.
+
+- Reports functionality.
+
+- Settings functionality.
+
+- Authentication changes.
+
+- Authorization changes.
+
+- Changes to the Clerk integration.
+
+- Changes to the existing ownership model.
+
+- New API endpoints.
+
+- New backend services.
+
+- New global state management.
+
+- Unnecessary routing architecture.
+
+- Unrelated refactoring.
+
+- Unrelated UI redesign.
+
+- New dependencies unless the approved proposal demonstrates that an existing dependency cannot reasonably support the task.
+
+Do not modify the database schema merely to support the Categories UI.
+
+If persistent category data is required for a future implementation, represent the UI using the simplest appropriate temporary/local approach unless the human explicitly approves database work.
+
+---
+
+## Categories UI Principles
+
+The proposed implementation should follow these principles:
+
+- Categories should have a clear visual identity.
+
+- Category information should be easy to scan.
+
+- The UI should remain consistent with the existing SalimSpend design.
+
+- Existing UI components should be reused where appropriate.
+
+- Components should represent meaningful UI responsibilities.
+
+- Avoid creating components for every small HTML element.
+
+- Avoid excessive abstraction.
+
+- Keep category-specific UI close to the Categories feature.
+
+- Keep reusable UI responsibilities separate when actual reuse exists.
+
+- Keep state local unless there is a clear reason for shared state.
+
+- Keep the implementation understandable for future database integration.
+
+- Do not introduce a permanent data architecture solely for this UI task.
+
+---
+
+## Category Information
+
+The agent should inspect the existing application and determine the appropriate category information to display.
+
+The proposal should explain which category properties are necessary for the current UI.
+
+Potential examples may include:
+
+- Category name
+
+- Category icon
+
+- Category color or visual accent
+
+- Category description, if actually useful
+
+The agent should not add category properties merely because they might be useful in the future.
+
+Only properties that provide meaningful value to the current Categories UI should be proposed.
+
+---
+
+## Category Interactions
+
+The UI should consider the following interactions where appropriate:
+
+### Add Category
+
+The user should have a clear way to open the add-category interface.
+
+The proposal should explain whether this should use:
+
+- a modal
+
+- an inline form
+
+- a drawer
+
+- another existing application pattern
+
+The agent should select the approach based on the existing SalimSpend UI.
+
+### Edit Category
+
+The user should be able to initiate editing of an existing category.
+
+The proposal should explain how the edit interaction fits the existing UI patterns.
+
+### Delete Category
+
+The user should have a clear way to initiate category removal.
+
+The proposal should explain whether confirmation is appropriate and why.
+
+Because database persistence is out of scope, the agent should not introduce destructive database operations.
+
+### Empty State
+
+The UI should provide a useful empty state when no categories are available.
+
+The empty state should explain what the user can do next.
+
+---
+
+## State and Data Principles
+
+This task does not establish the final category database architecture.
+
+The agent should:
+
+- Keep category UI state local where practical.
+
+- Avoid unnecessary global state.
+
+- Avoid introducing a new state-management library.
+
+- Avoid creating a database abstraction for temporary UI data.
+
+- Keep the UI structure compatible with future Supabase integration.
+
+- Clearly distinguish temporary UI state from persistent application data.
+
+If mock or local category data is necessary for the UI, the proposal must explain where that data will live and why.
+
+---
+
+## Tailwind Principles
+
+Use the existing Tailwind CSS installation.
+
+The proposal should explain:
+
+- Which existing Tailwind patterns will be reused.
+
+- How the Categories UI will match the existing visual language.
+
+- How spacing and layout will be handled.
+
+- How category icons/colors will be represented.
+
+- How responsive behavior will work.
+
+- How hover, focus, active, and disabled states will be handled where relevant.
+
+- Whether any existing CSS must be modified.
+
+Do not introduce another styling system.
+
+Do not perform unrelated styling cleanup.
+
+Do not redesign the existing Dashboard or Transactions UI as part of this task.
+
+---
+
+## Accessibility Principles
+
+The Categories UI should:
+
+- Use semantic HTML where appropriate.
+
+- Provide accessible labels for interactive controls.
+
+- Maintain visible keyboard focus states.
+
+- Avoid relying only on color to communicate meaning.
+
+- Ensure interactive buttons and controls are understandable.
+
+- Handle modal or dialog accessibility correctly if a modal is proposed.
+
+The agent should explain any accessibility considerations relevant to the proposed implementation.
+
+---
+
+## Agent Proposal
+
+### Proposed Structure
+
+The agent must inspect the current project before proposing the structure.
+
+The proposal should show the expected structure in a format similar to:
+
+```text
+src/
+
+├── components/
+│   └── ...
+
+├── pages/
+│   └── ...
+
+├── App.jsx
+├── index.css
+└── ...
+```
+
+The example structure is illustrative only.
+
+Do not assume specific filenames or directories before inspecting the project.
+
+---
+
+### Proposed Approach
+
+**Agent must explain:**
+
+- Where the Categories UI will live.
+
+- Whether Categories should be a page, section, or another existing application boundary.
+
+- Which components are necessary.
+
+- Which existing components can be reused.
+
+- How category state will be handled.
+
+- How add-category interaction will work.
+
+- How edit-category interaction will work.
+
+- How delete-category interaction will work.
+
+- How empty state will work.
+
+- How responsive behavior will work.
+
+- How the UI will integrate with the existing navigation.
+
+- How the implementation will preserve existing Dashboard and Transactions behavior.
+
+- How the implementation avoids unnecessary abstraction.
+
+- How the implementation remains compatible with future Supabase integration.
+
+---
+
+## Options
+
+The meaningful alternatives here are limited because the app already uses a simple state-driven view model with a sidebar and dedicated pages. The strongest fit is a dedicated Categories page that mirrors the current Dashboard and Transactions pattern.
+
+### Option 1 — Recommended
+
+- Use a dedicated Categories page that sits beside Dashboard and Transactions within the signed-in app shell.
+- Reuse the same left sidebar navigation and the same Earth-tone Tailwind styling patterns already used by the product.
+- Keep category state local to the page, using a small in-memory array for the UI-only task and a modal form for add/edit interactions.
+- Use a simple delete confirmation flow and an empty state card when no categories exist.
+- Use React Icons for the sidebar entries, action buttons, empty-state icons, and edit/delete affordances so the UI is consistent and easy to scan.
+
+This fits the current SalimSpend architecture because the app is not yet route-driven; it uses a lightweight signed-in view switcher with page-like sections. A dedicated Categories page is the clearest way to add the feature without introducing unnecessary router or state-management complexity. The trade-off is that it adds one more screen to the current view model, but it keeps the app easy to read and preserves the existing design and navigation structure.
+
+### Option 2
+
+- Keep Categories as a section embedded inside the Dashboard or a single modal-driven management panel.
+- Add a compact category list and action buttons directly in the dashboard workspace rather than a full page.
+
+This is a reasonable alternative if the product were trying to minimize screen count, but it is less clear and less scalable than a dedicated page. It also makes the category workflow feel less intentional and less consistent with the current Dashboard and Transactions separation. For a task whose goal is to establish a proper Categories UI, this approach weakens navigational clarity and future extensibility.
+
+### Option 3 — Optional
+
+- Build the category management flow as a modal or drawer from the sidebar or the page header, without creating a standalone page.
+
+This can work for a very minimal UI, and it keeps navigation simple. However, it is a weaker fit for the current architecture than a dedicated page because it hides the category experience in a secondary interaction pattern instead of giving users a clear place to review and manage their categories. It is useful only if the team wants a more compact product surface, but it is not the best match for the current SalimSpend structure.
+
+---
+
+## Agent Recommendation
+
+**Agent must recommend one approach and explain why.**
+
+The recommendation should prioritize:
+
+- Simplicity
+
+- Maintainability
+
+- Clear separation of responsibilities
+
+- Consistency with the existing SalimSpend UI
+
+- Reuse where appropriate
+
+- Minimal abstraction
+
+- Local state where practical
+
+- Accessibility
+
+- Responsive behavior
+
+- Future compatibility with Supabase
+
+- Preserving existing application behavior
+
+- Minimal change
+
+---
+
+## Expected Changes
+
+**Agent must describe the expected implementation changes without implementing them yet.**
+
+Include:
+
+- Components to create.
+
+- Pages to create.
+
+- Existing components to modify.
+
+- Existing pages to modify.
+
+- Changes to navigation.
+
+- Changes to styling.
+
+- State changes.
+
+- Temporary/mock data changes, if required.
+
+- Any files that may become obsolete.
+
+- Any dependencies that may be required.
+
+The agent must explain why each expected change is necessary.
+
+---
+
+## Files Expected To Change
+
+The agent must provide a list of expected files:
+
+### Create
+
+- ...
+
+### Modify
+
+- ...
+
+### Remove
+
+- ...
+
+If no files are expected to be removed, explicitly state that.
+
+The agent must not modify files outside the approved scope without human approval.
+
+---
+
+## Risks and Considerations
+
+The agent should identify meaningful implementation risks or considerations, such as:
+
+- Interaction complexity.
+
+- State management complexity.
+
+- Responsive layout concerns.
+
+- Accessibility concerns.
+
+- Compatibility with the existing navigation.
+
+- Future Supabase integration.
+
+- Potential duplication with existing UI components.
+
+Only meaningful risks should be included.
+
+Do not create artificial risks merely to fill the section.
+
+---
+
+## Implementation Approval
+
+**Human Decision:** APPROVED
+
+Possible decisions:
+
+[x] `APPROVED`
+
+[] `NEEDS REVISION`
+
+[] `REJECTED`
+
+The AI agent must not interpret `PENDING` as approval.
+
+The AI agent must not implement the task until the human explicitly changes the decision to `APPROVED`.
+
+---
+
+## Implementation Result
+
+### Status
+
+`IMPLEMENTED`
+
+### What Was Implemented
+
+The Categories UI was added as a dedicated signed-in view and integrated with the existing sidebar-based app structure. The implementation includes a category listing, an add-category form, edit-category handling, delete confirmation, and an empty-state view when no categories are present.
+
+### Why This Change Was Needed
+
+The app already had a Categories navigation entry in the sidebar, but the active view logic only supported Dashboard and Transactions screens. This left the Categories feature incomplete from a user-experience standpoint. The UI needed a clear, minimal interface that fit the current single-page architecture without introducing database or routing changes.
+
+### Impact
+
+- UI: Users can now review and manage categories from a dedicated screen.
+- application behavior: The sidebar Categories entry now opens a functioning UI instead of falling back to the dashboard.
+- architecture: Category management remains local to the frontend state and fits the existing page-based structure.
+- state: Category data is managed in component state for this UI-only task.
+- future database integration: The UI is structured in a way that can later be connected to persistence without redesign.
+
+### Files Changed
+
+- `src/App.jsx`
+- `src/pages/CategoriesPage.jsx`
+- `docs/tasks/task-007-categories-ui.md`
+
+### Verification
+
+- `npm run build` executed successfully.
+- `npm run lint` executed successfully.
+- Categories add flow reviewed in the implemented UI.
+- Categories edit flow reviewed in the implemented UI.
+- Categories delete confirmation flow reviewed in the implemented UI.
+- Empty-state behavior reviewed in the implemented UI.
+- Responsive layout preserved through the existing app shell patterns.

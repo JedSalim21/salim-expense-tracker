@@ -1,3 +1,9 @@
+import {
+  FiArrowDownLeft,
+  FiArrowUpRight,
+  FiInbox,
+  FiPlus,
+} from "react-icons/fi";
 import SidebarNav from "../components/SidebarNav";
 
 const transactionRows = [
@@ -77,10 +83,11 @@ export default function TransactionsPage({ currentView, onSelectView }) {
             </p>
           </div>
           <button
-            className="inline-flex min-h-[42px] items-center justify-center rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2 max-[680px]:mt-[18px]"
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2 max-[680px]:mt-[18px]"
             type="button"
           >
-            + Add Transaction
+            <FiPlus aria-hidden="true" />
+            Add Transaction
           </button>
         </header>
 
@@ -103,7 +110,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
             <div className="grid min-h-[260px] place-items-center rounded-[8px] border border-dashed border-[#d7e0dc] bg-[#f8faf8] px-6 py-10 text-center">
               <div>
                 <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#edf6f1] text-[20px] text-[#0f766e]">
-                  ↘
+                  <FiInbox aria-hidden="true" />
                 </div>
                 <h3 className="font-serif text-[26px] font-normal text-[#213b36]">
                   No transactions yet
@@ -132,7 +139,9 @@ export default function TransactionsPage({ currentView, onSelectView }) {
                       <span
                         className={`grid h-[34px] w-[34px] place-items-center rounded-[7px] font-serif text-sm font-bold ${transaction.type === "income" ? "bg-[#dcece1] text-[#27735f]" : "bg-[#f2e9d5] text-[#a2662d]"}`}
                       >
-                        {transaction.type === "income" ? "↗" : "↘"}
+                        {transaction.type === "income" ?
+                          <FiArrowUpRight aria-hidden="true" />
+                        : <FiArrowDownLeft aria-hidden="true" />}
                       </span>
                       <div className="min-w-0">
                         <strong className="block truncate text-sm font-semibold text-[#213b36]">
