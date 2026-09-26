@@ -108,7 +108,7 @@ export default function ReportsPage({ currentView, onSelectView }) {
           </div>
 
           <button
-            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
             type="button"
           >
             <FiCalendar aria-hidden="true" />

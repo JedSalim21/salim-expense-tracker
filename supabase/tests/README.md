@@ -1,6 +1,6 @@
 # Supabase RLS test files
 
-This directory contains schema enforcement tests for the approved Task 004 migration.
+This directory contains schema and ownership tests for the transaction data foundation.
 
 ## Included test files
 

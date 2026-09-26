@@ -2375,3 +2375,626 @@ _To be completed._
 ### Deviations / Notes
 
 _To be completed._
+
+# Agent Review
+
+This file is used to review AI agent proposals before implementation.
+
+The AI agent must analyze the current task, inspect the existing project structure and implementation, propose an implementation approach, identify meaningful alternatives, and explain expected changes.
+
+The human remains responsible for approving or rejecting the proposed approach.
+
+---
+
+## Current Task
+
+**Task: Task 010 — Architecture / Data Foundation**
+
+Establish the data architecture and database foundation for SalimSpend before implementing transaction CRUD or connecting the existing UI to real transaction data.
+
+This task should define how transaction data will be structured, stored, owned, secured, and accessed by the application.
+
+This task is **architecture/data foundation only**.
+
+Do not implement transaction CRUD, transaction UI behavior, Dashboard data integration, or Reports data integration as part of this task.
+
+**Status:** APPROVED
+
+---
+
+## Agent Instructions
+
+Before making implementation changes:
+
+1. Inspect the existing SalimSpend project structure and current implementation.
+
+2. Review:
+   - `AGENT.md`
+   - `SKILL.md`
+   - `docs/overview.md`
+   - Relevant files under `docs/tasks/`
+   - Existing `agent-review.md`
+   - Previous Task 002 — Transaction Architecture documentation
+
+3. Inspect the current:
+   - React/Vite structure
+   - Clerk authentication setup
+   - Supabase configuration
+   - PostgreSQL/Supabase database setup
+   - Transactions UI
+   - Categories UI
+   - Dashboard UI
+   - Reports UI
+   - Settings UI
+   - Existing data-access patterns
+   - Existing authentication/JWT/RLS implementation
+
+4. Analyze whether the decisions from Task 002 are still appropriate for the current application.
+
+5. Identify what needs to be established before Task 011 — Transaction CRUD.
+
+6. Propose the implementation approach and meaningful alternatives.
+
+7. Identify expected files and database/schema changes.
+
+8. Identify risks, dependencies, security considerations, and important architectural decisions.
+
+9. Do **not** implement the task yet.
+
+10. Update this `agent-review.md` with the proposal only.
+
+11. Wait for explicit human approval before making implementation changes.
+
+---
+
+## Approved Scope
+
+Task 010 should establish the foundation required for future transaction functionality.
+
+### Transaction Data Model
+
+Define the transaction structure required by the current and planned application.
+
+The model should consider:
+
+- Transaction ID
+- User ownership
+- Amount
+- Transaction type
+- Category relationship
+- Description/notes
+- Transaction date
+- Creation timestamp
+- Other fields only when justified
+
+Every field should have a clear purpose.
+
+Do not add speculative fields simply for future possibilities.
+
+---
+
+### PostgreSQL / Supabase Schema
+
+Define the database structure required for transaction data.
+
+This may include:
+
+- Transaction table
+- Column definitions
+- Data types
+- Required/optional fields
+- Primary key
+- Foreign keys
+- Default values
+- Constraints
+- Timestamp handling
+- Appropriate indexes where justified
+
+The schema should remain simple and aligned with the application's actual requirements.
+
+---
+
+### User Ownership
+
+Establish how transaction ownership will work with the existing authentication architecture.
+
+The expected conceptual flow is:
+
+```text
+Clerk User
+    ↓
+Clerk Authentication
+    ↓
+Clerk JWT
+    ↓
+Supabase
+    ↓
+PostgreSQL
+    ↓
+RLS
+    ↓
+User-owned transactions
+```
+
+The agent must inspect the existing project implementation before deciding how the Clerk identity maps to Supabase/PostgreSQL ownership.
+
+Do not assume that `auth.uid()` is automatically the raw Clerk user ID.
+
+---
+
+### Row Level Security
+
+Define and implement the required RLS protection for transaction records.
+
+The architecture must ensure:
+
+```text
+User A → User A's transactions only
+
+User B → User B's transactions only
+```
+
+Users must not be able to access or modify another user's transaction records.
+
+Do not weaken existing RLS policies.
+
+Do not use service-role credentials from browser/client code.
+
+---
+
+### Categories Relationship
+
+Determine how transactions should relate to categories.
+
+The relationship should work with the existing Categories UI and support the future Categories data implementation.
+
+Avoid unnecessary duplication of category information.
+
+The final relationship should support the future:
+
+```text
+Task 014 — Connect Categories
+```
+
+without requiring an unnecessary redesign.
+
+---
+
+### Data Flow
+
+Define the intended application data flow.
+
+The architecture should follow a predictable pattern:
+
+```text
+User Interaction
+      ↓
+React UI
+      ↓
+Application Logic
+      ↓
+Supabase Client
+      ↓
+PostgreSQL
+      ↓
+RLS
+      ↓
+Database Result
+      ↓
+Application State
+      ↓
+UI
+```
+
+The proposal should clearly identify where database/data-access responsibilities belong.
+
+Avoid introducing a large data-access architecture unless the existing project genuinely requires it.
+
+---
+
+### Frontend Data Contract
+
+Define the expected transaction data shape consumed by the frontend.
+
+Consider:
+
+- Field naming
+- Data types
+- Nullability
+- Amount representation
+- Date representation
+- Category representation
+- Loading behavior
+- Error behavior
+- Empty-data behavior
+
+The goal is to provide a predictable foundation for Task 011 and future UI integration tasks.
+
+---
+
+### Validation and Data Integrity
+
+Define important data integrity rules.
+
+Examples include:
+
+- Valid transaction amount
+- Required fields
+- Valid transaction type
+- Valid category relationship
+- Valid ownership
+- Appropriate database constraints
+
+Important rules should be enforced at the appropriate database/security layer rather than relying entirely on frontend validation.
+
+---
+
+### Future Compatibility
+
+The architecture should support the planned development sequence:
+
+```text
+Task 010
+Architecture / Data Foundation
+        ↓
+Task 011
+Transaction CRUD
+        ↓
+Task 012
+Connect Dashboard
+        ↓
+Task 013
+Connect Reports
+        ↓
+Task 014
+Connect Categories
+```
+
+Task 010 should establish the foundation for these tasks without implementing them.
+
+---
+
+## Out of Scope
+
+Do not implement:
+
+- Transaction CRUD
+- Add transaction functionality
+- Edit transaction functionality
+- Delete transaction functionality
+- Transaction form UI
+- Dashboard real-data integration
+- Reports real-data integration
+- Categories real-data integration
+- Advanced analytics
+- Charts
+- Filtering
+- Search
+- Pagination
+- Export functionality
+- Notifications
+- Settings persistence
+- Authentication redesign
+- Clerk account management
+- Password management
+- Authorization redesign
+- Unrelated UI redesign
+- Major component refactoring
+- New state-management libraries
+- Unnecessary dependencies
+- Unrelated database schema changes
+- Production deployment changes
+
+If something outside the approved scope appears necessary, stop and report it instead of expanding the task automatically.
+
+---
+
+## Agent Proposal
+
+### Proposed Approach
+
+Inspect the existing SalimSpend architecture first, with particular attention to the previously postponed **Task 002 — Transaction Architecture**.
+
+The implementation should preserve valid existing architectural decisions rather than creating a completely new transaction architecture.
+
+The proposed approach is:
+
+- Review the existing Clerk authentication and Supabase JWT/RLS implementation.
+- Review the previous Transaction Architecture decisions.
+- Define the final transaction data model.
+- Define the PostgreSQL/Supabase transaction schema.
+- Define the ownership relationship between Clerk users and transaction records.
+- Define and implement the required RLS policies.
+- Define the relationship between transactions and categories.
+- Establish only the minimal data-access foundation needed for future CRUD.
+- Define the frontend transaction data contract.
+- Keep the implementation compatible with Tasks 011–014.
+- Avoid implementing transaction behavior or UI functionality.
+
+The goal is to make the database and data architecture stable enough that Task 011 can focus specifically on transaction CRUD rather than revisiting fundamental architectural decisions.
+
+---
+
+## Options
+
+### Option 1 — Recommended
+
+Reuse the existing Clerk + Supabase architecture and establish a focused transaction schema with RLS and category relationships.
+
+Advantages:
+
+- Fits the existing SalimSpend architecture.
+- Keeps authentication and ownership consistent.
+- Minimizes unnecessary abstraction.
+- Creates a clear foundation for Task 011.
+- Keeps the scope focused.
+- Makes future Dashboard and Reports integration predictable.
+
+---
+
+### Option 2
+
+Create a more formal data-access layer with dedicated transaction services/repositories before implementing CRUD.
+
+Advantages:
+
+- Stronger separation between UI and database operations.
+- Could become useful as the application grows.
+
+Tradeoffs:
+
+- Adds additional abstraction before it is clearly needed.
+- Increases project complexity.
+- May be premature for the current application size.
+
+This should only be used if inspection shows that the existing architecture genuinely requires it.
+
+---
+
+### Option 3
+
+Implement only the Supabase database schema and postpone most application-side data architecture decisions until Task 011.
+
+Advantages:
+
+- Smallest immediate implementation.
+
+Tradeoffs:
+
+- Leaves important ownership/data-access decisions unresolved.
+- May cause Task 011 to mix architecture decisions with CRUD implementation.
+- Could increase the chance of inconsistent patterns during CRUD development.
+
+---
+
+## Agent Recommendation
+
+Use **Option 1**.
+
+The current SalimSpend architecture already establishes:
+
+```text
+React
+  ↓
+Clerk
+  ↓
+Supabase
+  ↓
+PostgreSQL
+```
+
+Task 010 should strengthen this existing architecture rather than introducing a new system.
+
+The transaction foundation should be intentionally small:
+
+```text
+Transaction Model
+      ↓
+PostgreSQL Schema
+      ↓
+Ownership
+      ↓
+RLS
+      ↓
+Category Relationship
+      ↓
+Minimal Data Access Foundation
+```
+
+This provides enough structure for Task 011 without prematurely implementing CRUD or introducing unnecessary abstractions.
+
+---
+
+## Expected Changes
+
+- Review and reconcile Task 002 Transaction Architecture with the current project.
+
+- Define the final transaction data model.
+
+- Add or modify the required Supabase/PostgreSQL transaction schema.
+
+- Establish transaction ownership using the existing Clerk/Supabase identity architecture.
+
+- Add or modify required RLS policies.
+
+- Define the transaction/category relationship.
+
+- Add database constraints where justified.
+
+- Establish minimal data-access/type definitions only where required.
+
+- Document the final architecture.
+
+- Preserve all existing UI and authentication behavior.
+
+---
+
+## Files Expected To Change
+
+The exact files should be determined after inspection.
+
+Potential changes may include:
+
+- Supabase migration/schema files
+- Database-related configuration or utilities
+- Transaction-related types/data-access files
+- Relevant documentation under `docs/tasks/`
+- `agent-review.md`
+
+Do not create unnecessary files or abstractions.
+
+Existing application files should only be modified if required by the approved architecture.
+
+---
+
+## Risks / Considerations
+
+- The existing Clerk/Supabase identity mapping must be understood before implementing ownership or RLS.
+
+- RLS policies must not assume that the raw Clerk user ID and Supabase `auth.uid()` are automatically identical.
+
+- The transaction/category relationship should avoid unnecessary duplication.
+
+- Database constraints should support data integrity without making future requirements unnecessarily difficult.
+
+- Task 002 may contain architectural decisions that need to be reconciled with the current implementation.
+
+- Schema changes should be non-destructive unless explicitly approved.
+
+- The implementation should not accidentally introduce transaction CRUD behavior.
+
+- No service-role or private credentials may be exposed to browser code.
+
+- The architecture should remain simple enough for the current application.
+
+- Future Tasks 011–014 should be able to build on this foundation without requiring another major architectural redesign.
+
+---
+
+## Human Decision
+
+**Decision:** APPROVED
+
+- [x] APPROVED
+
+- [ ] REJECTED
+
+- [ ] NEEDS REVISION
+
+---
+
+## Implementation Result
+
+**Status:** IMPLEMENTED
+
+### What Was Implemented
+
+Added transaction type and creation timestamp requirements through a follow-up migration, retained the approved Clerk `sub` ownership model and existing user-scoped relationships, made the Supabase client accept Clerk's access-token provider, and expanded the RLS/integrity test suite.
+
+### Files Changed
+
+- `src/lib/supabase.js` — replaced the unauthenticated singleton with a client factory that requires Supabase configuration and a Clerk token provider.
+- `supabase/migrations/20260926_000001_add_transaction_type_and_created_at.sql` — adds the required transaction type and creation timestamp without rewriting the existing migration; refuses to guess a type if transaction rows already exist.
+- `supabase/tests/transaction_rls.test.sql` — executes as `authenticated` and covers cross-user isolation, CRUD policy behavior, constraints, relationships, and defaults.
+- `supabase/tests/README.md` — describes the test suite's expanded scope.
+- `docs/tasks/task-010-architecture-data-foundation.md` — records the implemented schema, ownership flow, frontend contract, and limitations.
+- `agent-review.md` — records Task 010's actual implementation and verification status.
+
+### Database / Schema Changes
+
+Added `transactions.type` (`income` or `expense`, required) and `transactions.created_at` (`timestamptz`, default `now()`). The migration is additive and aborts if existing transaction rows need an explicit type backfill.
+
+### Ownership / RLS Changes
+
+Kept `clerk_user_id` mapped to the Clerk JWT `sub` claim. No existing RLS policies were weakened. The client factory supplies Clerk's access token to Supabase; database requests remain subject to the existing policies.
+
+### Verification
+
+- `npx eslint src/lib/supabase.js` passed.
+- The 36 pgTAP assertion count matches `plan(36)`.
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npx supabase test db` could not connect to local Postgres (`127.0.0.1:54322`); Docker is unavailable in this environment.
+- Remote migration history could not be checked because the Supabase connection timed out during authentication.
+
+### Issues / Follow-ups
+
+Run the migration and database tests in a working local Supabase environment. If the target database already contains transactions, prepare an explicit income/expense backfill before applying the new migration. The app does not yet call the new client factory; transaction CRUD and database-backed UI remain out of scope.
+
+---
+
+## Human Acceptance
+
+**Decision:** APPROVED
+
+- [x] ACCEPTED
+
+- [ ] NEEDS FIXES
+
+- [ ] REQUIRES FURTHER REVIEW
+
+---
+
+## Documentation Transparency Rule
+
+Whenever the AI agent creates or modifies any Markdown (`.md`) file in the project, including this file:
+
+1. Explicitly identify the Markdown file that changed.
+
+2. Explain what was changed.
+
+3. Explain why it was changed.
+
+4. Explain the impact of the change.
+
+5. Wait for human review and approval before the documentation change is considered accepted or committed.
+
+The agent must not silently modify Markdown documentation.
+
+---
+
+## Workflow
+
+```text
+Task
+
+  ↓
+
+Agent analyzes
+
+  ↓
+
+Agent proposes approach/options
+
+  ↓
+
+Human reviews
+
+  ↓
+
+APPROVED?
+
+  ├── No → Revise proposal
+
+  └── Yes
+
+        ↓
+
+     Implement
+
+        ↓
+
+   Test + Verify
+
+        ↓
+
+    Human Review
+
+        ↓
+
+    ACCEPTED?
+
+        ├── No → Fix
+
+        └── Yes → Commit
+```
