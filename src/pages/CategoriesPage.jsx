@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth, useUser } from "@clerk/react";
 import {
   FiCheck,
   FiEdit2,
@@ -9,6 +10,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import SidebarNav from "../components/SidebarNav";
+import { loadCategories } from "../lib/categories";
+import { createSupabaseClient } from "../lib/supabase";
 
 const colorOptions = [
   { name: "Teal", value: "#0f766e" },
@@ -19,37 +22,6 @@ const colorOptions = [
   { name: "Slate", value: "#475569" },
 ];
 
-const initialCategories = [
-  {
-    id: "cat-housing",
-    name: "Housing",
-    description: "Rent, utilities, and home essentials.",
-    color: "#0f766e",
-    isDefault: true,
-  },
-  {
-    id: "cat-food",
-    name: "Food",
-    description: "Groceries, dining, and everyday meals.",
-    color: "#d97706",
-    isDefault: true,
-  },
-  {
-    id: "cat-transport",
-    name: "Transport",
-    description: "Fuel, transit, and commuting costs.",
-    color: "#2563eb",
-    isDefault: true,
-  },
-  {
-    id: "cat-lifestyle",
-    name: "Lifestyle",
-    description: "Entertainment, wellness, and personal spending.",
-    color: "#be185d",
-    isDefault: false,
-  },
-];
-
 const defaultFormState = {
   name: "",
   description: "",
@@ -57,11 +29,57 @@ const defaultFormState = {
 };
 
 export default function CategoriesPage({ currentView, onSelectView }) {
-  const [categories, setCategories] = useState(initialCategories);
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const supabase = useMemo(() => {
+    if (!isLoaded || !isSignedIn) {
+      return null;
+    }
+
+    return createSupabaseClient(getToken);
+  }, [getToken, isLoaded, isSignedIn]);
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formState, setFormState] = useState(defaultFormState);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    const fetchCategories = async () => {
+      if (!isLoaded || !isSignedIn || !user?.id || !supabase) {
+        setCategories([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const rows = await loadCategories(supabase, user.id);
+        if (isActive) {
+          setCategories(rows);
+        }
+      } catch {
+        if (isActive) {
+          setErrorMessage("Unable to load categories. Please try again.");
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchCategories();
+    return () => {
+      isActive = false;
+    };
+  }, [isLoaded, isSignedIn, supabase, user?.id]);
 
   const resetForm = () => {
     setIsFormOpen(false);
@@ -88,7 +106,7 @@ export default function CategoriesPage({ currentView, onSelectView }) {
     setIsFormOpen(true);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const trimmedName = formState.name.trim();
@@ -97,35 +115,63 @@ export default function CategoriesPage({ currentView, onSelectView }) {
       return;
     }
 
-    const existingCategory =
-      editingId ?
-        categories.find((category) => category.id === editingId)
-      : null;
-
     const categoryPayload = {
-      id: editingId ?? `category-${Date.now()}`,
       name: trimmedName,
       description: formState.description.trim(),
       color: formState.color,
-      isDefault: existingCategory?.isDefault ?? false,
+      is_default: false,
     };
 
-    setCategories((currentCategories) => {
-      if (editingId) {
-        return currentCategories.map((category) =>
-          category.id === editingId ?
-            { ...category, ...categoryPayload }
-          : category,
-        );
+    if (!user?.id || !supabase) {
+      setErrorMessage("You must be signed in to save categories.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+      const query =
+        editingId ?
+          supabase
+            .from("categories")
+            .update(categoryPayload)
+            .eq("id", editingId)
+            .select("id, name, description, color, is_default")
+        : supabase
+            .from("categories")
+            .insert([{ ...categoryPayload, clerk_user_id: user.id }])
+            .select("id, name, description, color, is_default");
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
       }
 
-      return [categoryPayload, ...currentCategories];
-    });
+      const savedCategory = data?.[0];
+      if (!savedCategory) {
+        throw new Error("The category could not be saved.");
+      }
 
-    resetForm();
+      setCategories((currentCategories) =>
+        editingId ?
+          currentCategories.map((category) =>
+            category.id === editingId ? savedCategory : category,
+          )
+        : [...currentCategories, savedCategory].sort((left, right) =>
+            left.name.localeCompare(right.name),
+          ),
+      );
+      resetForm();
+    } catch {
+      setErrorMessage(
+        "Unable to save category. Check that the name is unique and try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDelete = (categoryId) => {
+  const handleDelete = async (categoryId) => {
     const targetCategory = categories.find(
       (category) => category.id === categoryId,
     );
@@ -134,19 +180,33 @@ export default function CategoriesPage({ currentView, onSelectView }) {
     }
 
     const shouldDelete = window.confirm(
-      `Delete "${targetCategory.name}"? This only removes it from the category list in this UI.`,
+      `Delete "${targetCategory.name}"? Categories used by transactions cannot be deleted.`,
     );
 
     if (!shouldDelete) {
       return;
     }
 
-    setCategories((currentCategories) =>
-      currentCategories.filter((category) => category.id !== categoryId),
-    );
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .delete()
+        .eq("id", categoryId);
 
-    if (editingId === categoryId) {
-      resetForm();
+      if (error) {
+        throw error;
+      }
+
+      setCategories((currentCategories) =>
+        currentCategories.filter((category) => category.id !== categoryId),
+      );
+      if (editingId === categoryId) {
+        resetForm();
+      }
+    } catch {
+      setErrorMessage(
+        "Unable to delete category. It may be linked to existing transactions.",
+      );
     }
   };
 
@@ -186,8 +246,18 @@ export default function CategoriesPage({ currentView, onSelectView }) {
           </button>
         </header>
 
+        {errorMessage ?
+          <div className="mb-4 rounded-[8px] border border-[#f2d1c4] bg-[#fff3f0] px-4 py-3 text-sm text-[#8a3c26]">
+            {errorMessage}
+          </div>
+        : null}
+
         <div className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-[18px] max-[680px]:p-[14px]">
-          {categories.length === 0 ?
+          {isLoading ?
+            <div className="grid min-h-[260px] place-items-center rounded-[8px] border border-dashed border-[#d7e0dc] bg-[#f8faf8] px-6 py-10 text-center text-sm text-[var(--text-secondary)]">
+              Loading your categories...
+            </div>
+          : categories.length === 0 ?
             <div className="grid min-h-[260px] place-items-center rounded-[8px] border border-dashed border-[#d7e0dc] bg-[#f8faf8] px-6 py-10 text-center">
               <div>
                 <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#edf6f1] text-[20px] text-[#0f766e]">
@@ -232,7 +302,7 @@ export default function CategoriesPage({ currentView, onSelectView }) {
                           {category.name}
                         </h3>
                         <span className="mt-1 block text-[10px] font-extrabold uppercase tracking-[0.10em] text-[var(--text-muted)]">
-                          {category.isDefault ? "Default" : "Custom"}
+                          {category.is_default ? "Default" : "Custom"}
                         </span>
                       </div>
                     </div>
@@ -262,18 +332,6 @@ export default function CategoriesPage({ currentView, onSelectView }) {
                   <p className="mt-[14px] min-h-[42px] text-sm leading-[1.55] text-[var(--text-secondary)]">
                     {category.description || "No description provided."}
                   </p>
-
-                  <div className="mt-[20px] flex items-center justify-between gap-3 border-t border-[#efece4] pt-[12px] text-[10px] font-extrabold uppercase tracking-[0.10em] text-[#8b8d83]">
-                    <span className="inline-flex items-center gap-[7px]">
-                      <i
-                        className="inline-block h-[9px] w-[9px] rounded-full"
-                        style={{ backgroundColor: category.color }}
-                        aria-hidden="true"
-                      ></i>
-                      {category.color}
-                    </span>
-                    <span>Category</span>
-                  </div>
                 </article>
               ))}
             </div>
@@ -389,8 +447,13 @@ export default function CategoriesPage({ currentView, onSelectView }) {
                 <button
                   className="min-h-[40px] rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59]"
                   type="submit"
+                  disabled={isSubmitting}
                 >
-                  {editingId ? "Save changes" : "Create category"}
+                  {isSubmitting ?
+                    "Saving..."
+                  : editingId ?
+                    "Save changes"
+                  : "Create category"}
                 </button>
               </div>
             </form>

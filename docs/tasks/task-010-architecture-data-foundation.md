@@ -34,15 +34,37 @@ The frontend row contract is the database field names above, with UUIDs and text
 
 ```text
 Clerk session
-    ↓ access token
-Supabase client accessToken provider
-    ↓ validated JWT
-PostgreSQL RLS checks auth.jwt() ->> 'sub'
+    ↓ Clerk session token
+Supabase Third-Party Auth validates the Clerk token
+    ↓ validated JWT claims available to Postgres
+RLS checks clerk_user_id = auth.jwt() ->> 'sub'
     ↓
 Rows where clerk_user_id matches the Clerk subject
 ```
 
-`createSupabaseClient(getAccessToken)` creates a Supabase client using the public Supabase URL/key and the provided Clerk token callback. The database remains responsible for ownership enforcement; client-provided ownership values are not trusted. No service-role key or server-only credential is used in browser code.
+Supabase Third-Party Auth validates the Clerk-issued session JWT and makes its claims available to Postgres; it does not exchange the token for a newly issued Supabase Auth JWT. The Supabase client supplies the Clerk session token through its `accessToken()` callback. The database remains responsible for ownership enforcement; client-provided ownership values are not trusted. No service-role key or server-only credential is used in browser code.
+
+### Required Clerk and Supabase provider configuration
+
+Use Clerk's native Supabase integration and Supabase Third-Party Auth. Do not create or request a custom Clerk JWT template named `supabase`; that template-based integration is deprecated. Authenticated Clerk session tokens must include `role: "authenticated"` for Supabase to treat requests as the `authenticated` Postgres role. The Clerk subject claim `sub` remains the stable user identifier.
+
+Required dashboard configuration:
+
+- In the Clerk Dashboard, open [Connect with Supabase](https://dashboard.clerk.com/setup/supabase), activate the Supabase integration, and note the Clerk domain shown for this Clerk instance. This configures Clerk session tokens for Supabase compatibility, including the required authenticated role claim.
+- In the Supabase Dashboard, open **Authentication > Sign In / Providers > Third-Party Auth**, add **Clerk**, and enter the Clerk domain from the Clerk Dashboard.
+- For local Supabase CLI/self-hosted environments, configure `[auth.third_party.clerk]` with `enabled = true` and the Clerk instance `domain` in `supabase/config.toml`.
+
+The live Supabase provider configuration has not been verified as part of this documentation change. Complete and verify the dashboard setup before expecting Clerk-authenticated Supabase requests to pass.
+
+The existing ownership condition remains unchanged:
+
+```sql
+clerk_user_id = auth.jwt() ->> 'sub'
+```
+
+Here, `sub` is the Clerk user ID in the validated Clerk session token. Keep storing that value in `clerk_user_id`; do not substitute `auth.uid()` or trust a client-provided owner ID. No RLS policy change is required for this authentication integration switch.
+
+References: [Clerk's Supabase integration guide](https://clerk.com/docs/integrations/databases/supabase) and [Supabase's Clerk third-party auth guide](https://supabase.com/docs/guides/auth/third-party/clerk).
 
 RLS remains enabled for all three user-owned tables with per-operation policies. Composite foreign keys bind each transaction's category and payment method to the same `clerk_user_id`; `ON DELETE RESTRICT` prevents deleting referenced rows. Existing user-scoped indexes and duplicate-name constraints are retained.
 
@@ -73,4 +95,4 @@ RLS remains enabled for all three user-owned tables with per-operation policies.
 
 ## Follow-up Considerations
 
-Before applying the migration to any database with transaction rows, determine each row's type and backfill it explicitly. Task 011 should pass the Clerk `getToken` callback to `createSupabaseClient` and set the ownership key from the authenticated Clerk subject; it should not add service-role access or rely on client filtering for authorization.
+Before applying the migration to any database with transaction rows, determine each row's type and backfill it explicitly. Task 011 should pass the default Clerk session-token callback to Supabase `accessToken()` without requesting a JWT template, and set the ownership key from the authenticated Clerk subject; it should not add service-role access or rely on client filtering for authorization.

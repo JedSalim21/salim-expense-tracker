@@ -2998,3 +2998,440 @@ APPROVED?
 
         └── Yes → Commit
 ```
+
+# Task 011 — Transaction CRUD
+
+## Current Task
+
+**Task 011 — Transaction CRUD**
+
+**Status:** APPROVED
+
+---
+
+## Agent Instructions
+
+Before implementation:
+
+1. Read `AGENT.md`.
+2. Read `SKILL.md`.
+3. Read `docs/overview.md`.
+4. Inspect relevant files under `docs/tasks/`.
+5. Review the implementation and decisions from **Task 010 — Architecture / Data Foundation**.
+6. Inspect the current transaction-related database schema, RLS policies, frontend structure, components, and existing Supabase/Clerk integration.
+7. Inspect the existing UI from the previous tasks and reuse established patterns where appropriate.
+8. Identify the smallest reasonable implementation needed for Transaction CRUD.
+9. Propose the implementation approach, expected files, risks, and verification steps.
+10. **Do not implement anything until the human explicitly approves the proposal.**
+
+The agent must not infer approval from this document or from the existence of the task.
+
+---
+
+# Approved Scope
+
+Once approved, this task may include:
+
+- Create transaction functionality.
+- Read/list transaction functionality.
+- Update/edit transaction functionality.
+- Delete transaction functionality.
+- Connecting the existing transaction UI to Supabase.
+- Using the existing Clerk authentication and Supabase/RLS ownership architecture.
+- Transaction form validation.
+- Loading, empty, and error states where relevant.
+- Maintaining user ownership through the existing RLS policies.
+- Reusing existing categories where appropriate.
+- Keeping the implementation compatible with the architecture established in Task 010.
+- Testing and verification of transaction CRUD behavior.
+
+---
+
+# Out of Scope
+
+The following are **not** part of this task unless explicitly approved:
+
+- Dashboard real-data integration.
+- Reports real-data integration.
+- Categories database architecture changes.
+- New authentication features.
+- Changing Clerk authentication.
+- Changing the established RLS ownership model.
+- Redesigning the existing UI.
+- Advanced filtering/search.
+- Advanced analytics.
+- Budgets or financial goals.
+- Recurring transactions.
+- Pagination unless required by the existing architecture.
+- Unrelated database/schema changes.
+- Unrelated refactoring.
+- New dependencies unless justified and approved.
+
+If implementation requires a change outside the approved scope, stop and report it before proceeding.
+
+---
+
+# Agent Proposal
+
+## Recommended Approach
+
+Use the existing architecture established in **Task 010**.
+
+The transaction flow should remain predictable:
+
+```text
+User interaction
+      ↓
+Transaction UI
+      ↓
+Application logic
+      ↓
+Supabase
+      ↓
+PostgreSQL
+      ↓
+RLS ownership check
+      ↓
+Transaction result
+      ↓
+Application state
+      ↓
+UI
+```
+
+The implementation should use the existing Clerk identity and Supabase integration rather than introducing a second authentication or ownership mechanism.
+
+Transaction ownership must remain enforced by the database through the existing RLS policies:
+
+```text
+clerk_user_id
+      ↓
+Clerk JWT `sub`
+      ↓
+Supabase RLS
+```
+
+The client must not be treated as the authority for ownership.
+
+---
+
+## CRUD Breakdown
+
+### 1. Create
+
+Allow the authenticated user to create a transaction containing the fields established by Task 010.
+
+The implementation should:
+
+- Validate required input.
+- Associate the transaction with the authenticated Clerk user.
+- Submit the transaction through Supabase.
+- Handle database errors explicitly.
+- Update the UI after successful creation.
+
+---
+
+### 2. Read
+
+Load the authenticated user's transactions from Supabase.
+
+The implementation should:
+
+- Query the existing `transactions` table.
+- Rely on RLS for ownership protection.
+- Handle loading state.
+- Handle empty state.
+- Handle query errors.
+- Display transaction data using the existing UI structure.
+
+The client should not manually fetch all users' transactions and filter them afterward.
+
+---
+
+### 3. Update
+
+Allow the user to edit an existing transaction.
+
+The implementation should:
+
+- Load the selected transaction into the editing UI.
+- Validate changes.
+- Update only the appropriate transaction.
+- Rely on RLS to verify ownership.
+- Handle update errors.
+- Reflect successful changes in the UI.
+
+---
+
+### 4. Delete
+
+Allow the user to remove an existing transaction.
+
+The implementation should:
+
+- Identify the selected transaction.
+- Request deletion through Supabase.
+- Rely on RLS to enforce ownership.
+- Handle deletion errors.
+- Remove the transaction from the visible UI after successful deletion.
+
+If the existing UI already provides a confirmation pattern, reuse it rather than introducing a different interaction pattern.
+
+---
+
+# Data Handling
+
+The implementation should follow the transaction model established in Task 010.
+
+Do not introduce duplicate transaction models or unnecessary transformation layers.
+
+If frontend types/interfaces are needed, they should reflect the established database contract rather than creating a competing structure.
+
+---
+
+# Error Handling
+
+The implementation should explicitly handle relevant failures, including:
+
+- Invalid transaction input.
+- Failed transaction creation.
+- Failed transaction loading.
+- Failed transaction update.
+- Failed transaction deletion.
+- Authentication/session-related failures where relevant.
+
+Errors must not be silently swallowed.
+
+User-facing error messages should be understandable without exposing sensitive database or authentication details.
+
+---
+
+# UI Behavior
+
+Reuse the existing Transaction UI from previous tasks.
+
+The task should focus on **making the existing transaction interface functional**, not redesigning it.
+
+Relevant states should be handled:
+
+```text
+Loading
+   ↓
+Transactions loaded
+   ↓
+ ┌───────────────┐
+ │ Has data      │ → Display transactions
+ │ Empty         │ → Empty state
+ │ Error         │ → Error state
+ └───────────────┘
+```
+
+After CRUD operations, the UI should remain synchronized with the resulting database state.
+
+---
+
+# Security Requirements
+
+The implementation must preserve the architecture established in Task 010.
+
+Do not:
+
+- Trust a client-provided ownership ID.
+- Allow users to specify another user's `clerk_user_id`.
+- Disable or weaken RLS.
+- Replace RLS with frontend-only filtering.
+- Expose service-role credentials.
+- Introduce server-only secrets into browser code.
+
+The existing Clerk → JWT → Supabase → RLS ownership flow must remain intact.
+
+---
+
+# Expected Changes
+
+The agent should identify the exact files after inspection.
+
+Potential changes may include:
+
+```text
+src/
+├── components/
+│   └── transaction-related components
+├── pages/
+│   └── TransactionsPage.jsx
+└── existing Supabase/data utilities
+```
+
+Possible documentation updates may include:
+
+```text
+docs/tasks/task-011-transaction-crud.md
+agent-review.md
+```
+
+The agent must not create unnecessary files merely to satisfy an abstraction.
+
+---
+
+# Risks / Things to Verify
+
+Before implementation, specifically inspect:
+
+1. **Task 010 transaction schema**
+   - Confirm the exact fields and constraints.
+
+2. **Clerk identity**
+   - Confirm how the authenticated Clerk user is represented in the existing application.
+
+3. **Supabase integration**
+   - Reuse the existing client/configuration.
+
+4. **RLS**
+   - Preserve the verified ownership policies from Task 010.
+
+5. **Category relationship**
+   - Use the established category relationship without redesigning it.
+
+6. **Existing Transaction UI**
+   - Determine what UI already exists and what functionality is missing.
+
+7. **State synchronization**
+   - Ensure create/update/delete operations correctly update the displayed transactions.
+
+8. **Error and loading states**
+   - Avoid leaving the UI in an inconsistent state after failed operations.
+
+---
+
+# Verification Plan
+
+After implementation, verify:
+
+### Create
+
+- User can create a valid transaction.
+- Invalid required input is rejected.
+- Created transaction appears correctly.
+
+### Read
+
+- Authenticated user can load their transactions.
+- Empty state works.
+- Loading state works.
+- Query errors are handled.
+
+### Update
+
+- User can edit their own transaction.
+- Updated values appear correctly.
+- Invalid input is handled.
+
+### Delete
+
+- User can delete their own transaction.
+- Deleted transaction disappears from the UI.
+- Delete errors are handled.
+
+### Ownership / Security
+
+- CRUD requests use the established Clerk/Supabase architecture.
+- RLS remains enabled.
+- Ownership is enforced by the database.
+- No client-side ownership bypass is introduced.
+
+### Regression
+
+- Existing authentication still works.
+- Dashboard, Reports, Categories, and Settings UI remain functional.
+- Existing Light/Dark mode behavior remains intact.
+- Project lint/build/tests are run as applicable.
+
+The agent must report exactly which verification steps were actually performed and must not claim checks passed if they were not run.
+
+---
+
+# Documentation Transparency Rule
+
+If the agent creates or updates **any `.md` file**, it must explicitly report:
+
+- Which `.md` file changed.
+- What was changed.
+- Why it was changed.
+- What impact the change has.
+
+Documentation changes require human review before they are considered accepted or committed.
+
+The agent must not silently modify Markdown documentation.
+
+---
+
+# Human Decision
+
+**APPROVED**
+
+- [x] APPROVED
+- [ ] NEEDS REVISION
+- [ ] REJECTED
+
+**Human Notes:**
+
+_Add notes here if needed._
+
+---
+
+# Implementation Result
+
+**Status:** PENDING
+
+After approval and implementation, the agent must document:
+
+- Files changed.
+- What was implemented.
+- Why the changes were made.
+- Impact on existing behavior.
+- Verification performed.
+- Any issues discovered.
+- Any scope changes requested during implementation.
+
+---
+
+# Human Acceptance
+
+**Status:** ACCEPTED
+
+- [x] ACCEPTED
+- [ ] NEEDS REVISION
+
+Final acceptance belongs to the human reviewer.
+
+---
+
+# Workflow
+
+```text
+Task
+ ↓
+Understand
+ ↓
+Inspect
+ ↓
+Decompose if needed
+ ↓
+Propose approach
+ ↓
+Human Review
+ ↓
+APPROVED
+ ↓
+Implement
+ ↓
+Test
+ ↓
+Verify
+ ↓
+Human Review
+ ↓
+ACCEPTED
+```
+
+The agent must stop at **Human Review** until explicit approval is provided.

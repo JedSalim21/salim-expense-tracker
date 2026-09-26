@@ -7,16 +7,15 @@ import {
 } from "react-icons/fi";
 
 const navigation = [
-  { id: "dashboard", number: "01", label: "Dashboard", icon: FiGrid },
+  { id: "dashboard", label: "Dashboard", icon: FiGrid },
   {
     id: "transactions",
-    number: "02",
     label: "Transactions",
     icon: FiTrendingUp,
   },
-  { id: "categories", number: "03", label: "Categories", icon: FiTag },
-  { id: "reports", number: "04", label: "Reports", icon: FiBarChart2 },
-  { id: "settings", number: "05", label: "Settings", icon: FiSettings },
+  { id: "categories", label: "Categories", icon: FiTag },
+  { id: "reports", label: "Reports", icon: FiBarChart2 },
+  { id: "settings", label: "Settings", icon: FiSettings },
 ];
 
 export default function SidebarNav({
@@ -50,11 +49,6 @@ export default function SidebarNav({
               type="button"
               onClick={() => onSelectView(item.id)}
             >
-              <span
-                className={`w-6 font-mono text-[10px] ${isActive ? "text-[var(--brand)]" : "text-[var(--text-muted)]"}`}
-              >
-                {item.number}
-              </span>
               <span className="inline-flex items-center gap-2">
                 <Icon className="text-[14px]" aria-hidden="true" />
                 {item.label}
