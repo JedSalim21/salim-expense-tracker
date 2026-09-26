@@ -20,7 +20,7 @@ function App() {
   const [activeView, setActiveView] = useState("dashboard");
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") {
-      return "light";
+      return "dark";
     }
 
     const savedTheme = window.localStorage.getItem("salimspend-theme");
@@ -28,9 +28,7 @@ function App() {
       return savedTheme;
     }
 
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ?
-        "dark"
-      : "light";
+    return "dark";
   });
 
   useEffect(() => {

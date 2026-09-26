@@ -51,7 +51,7 @@ export const defaultCategories = [
     color: "#be185d",
   },
   {
-    name: "Other",
+    name: "Others",
     description: "Transactions that do not fit another category.",
     color: "#475569",
   },

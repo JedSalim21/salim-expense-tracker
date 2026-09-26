@@ -382,8 +382,8 @@ export default function TransactionsPage({ currentView, onSelectView }) {
   const hasTransactions = transactions.length > 0;
   const hasReferenceData = categories.length > 0 && paymentMethods.length > 0;
   const orderedCategories = [...categories].sort((left, right) => {
-    const leftIsOther = left.name.toLowerCase() === "other";
-    const rightIsOther = right.name.toLowerCase() === "other";
+    const leftIsOther = left.name.toLowerCase() === "others";
+    const rightIsOther = right.name.toLowerCase() === "others";
 
     if (leftIsOther !== rightIsOther) {
       return leftIsOther ? 1 : -1;

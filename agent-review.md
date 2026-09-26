@@ -3435,3 +3435,1067 @@ ACCEPTED
 ```
 
 The agent must stop at **Human Review** until explicit approval is provided.
+
+## Current Task
+
+**Task 012 — Connect Reports**
+
+**Status:** APPROVED
+
+---
+
+## Agent Instructions
+
+Before implementation:
+
+1. Read `AGENT.md`.
+
+2. Read `SKILL.md`.
+
+3. Read `docs/overview.md`.
+
+4. Inspect relevant files under `docs/tasks/`.
+
+5. Review the implementation and decisions from **Task 010 — Architecture / Data Foundation**.
+
+6. Review the implementation and decisions from **Task 011 — Transaction CRUD**.
+
+7. Inspect the current Reports UI, components, hooks, utilities, and data flow.
+
+8. Inspect the existing Supabase/Clerk integration and transaction data access pattern.
+
+9. Determine how Reports currently obtains or calculates its data.
+
+10. Identify the smallest reasonable implementation needed to connect Reports to the existing transaction data.
+
+11. Identify expected files, implementation approach, risks, and verification steps.
+
+12. **Do not implement anything until the human explicitly approves the proposal.**
+
+The agent must not infer approval from this document or from the existence of the task.
+
+---
+
+# Proposed Scope
+
+Once explicitly approved, this task may include:
+
+- Connecting the existing Reports UI to real transaction data from Supabase.
+- Reusing the existing transaction data access pattern established in Task 011.
+- Using the existing Clerk authentication and Supabase/RLS ownership architecture.
+- Connecting existing report calculations to real transaction records.
+- Displaying accurate transaction-based financial summaries already represented by the existing Reports UI.
+- Handling loading states where relevant.
+- Handling empty transaction data.
+- Handling database/request errors.
+- Maintaining user ownership through the existing RLS architecture.
+- Keeping the implementation compatible with the architecture established in Tasks 010 and 011.
+- Testing and verification of Reports using real database data.
+
+If implementation requires a change outside this scope, stop and report it before proceeding.
+
+---
+
+# Out of Scope
+
+The following are **not** part of this task unless explicitly approved:
+
+- Redesigning the Reports UI.
+- Creating an entirely new Reports system.
+- Adding new report types that are not already required by the existing UI/specification.
+- Advanced analytics.
+- Budgeting features.
+- Financial goals.
+- Recurring transactions.
+- Transaction CRUD changes.
+- Categories architecture changes.
+- Authentication redesign.
+- Changing Clerk authentication.
+- Changing the established RLS ownership model.
+- Database schema redesign.
+- Export functionality.
+- New chart/visualization libraries unless clearly required by the existing Reports UI and explicitly approved.
+- Performance optimization unrelated to connecting Reports.
+- Unrelated refactoring.
+- New dependencies unless justified and approved.
+- Unrelated database/schema changes.
+
+If implementation requires a change outside the approved scope, stop and report it before proceeding.
+
+---
+
+# Agent Proposal
+
+## Recommended Approach
+
+Use the existing architecture established in **Tasks 010 and 011**.
+
+Reports should consume the same trusted transaction data source already used by the Transaction functionality rather than creating a second or duplicate transaction-fetching architecture.
+
+The intended flow should remain predictable:
+
+```text
+Authenticated User
+        ↓
+Reports UI
+        ↓
+Existing Application Data Layer
+        ↓
+Supabase
+        ↓
+PostgreSQL
+        ↓
+RLS Ownership Check
+        ↓
+User's Transactions
+        ↓
+Report Calculations
+        ↓
+Reports UI
+```
+
+The implementation should reuse existing Supabase/Clerk integration rather than introducing a second authentication or ownership mechanism.
+
+The client must not be treated as the authority for user ownership.
+
+User-specific transaction access must continue to rely on the established Clerk → JWT → Supabase → RLS architecture.
+
+---
+
+# Reports Data Flow
+
+The agent should first determine the current Reports data flow.
+
+Before implementation, answer:
+
+1. Where does the Reports page currently get its data?
+2. Is it using mock, static, placeholder, or locally generated data?
+3. What transaction fields does the Reports UI require?
+4. Which existing transaction data access logic from Task 011 can be reused?
+5. Are report calculations already implemented?
+6. Which calculations are missing, if any?
+7. Does the existing Reports UI require category information?
+8. Does the existing Reports UI require date-based filtering or grouping?
+9. What is the minimum change required to connect the current Reports UI to real database data?
+
+The agent must inspect the actual implementation before deciding these answers.
+
+---
+
+# Data Handling
+
+The implementation should use the transaction model established by Tasks 010 and 011.
+
+Relevant existing transaction fields may include:
+
+```text
+amount
+type
+description
+category_id
+payment_method_id
+date
+occurred_at
+created_at
+```
+
+The agent must confirm the actual current schema and frontend data model before implementation.
+
+Do not introduce duplicate transaction models.
+
+Do not create a second independent Supabase client.
+
+Do not create a second transaction-fetching architecture unless the existing implementation genuinely requires it.
+
+If category information is required by Reports, reuse the existing category relationship/data access pattern.
+
+---
+
+# Report Calculations
+
+The agent should inspect the current Reports UI and existing calculation logic before implementing anything.
+
+Where calculations already exist, connect them to real transaction data rather than recreating them unnecessarily.
+
+Potential existing report values may include:
+
+- Total income
+- Total expenses
+- Net balance
+- Expenses by category
+- Income vs. expenses
+- Date-based summaries
+
+These are examples only.
+
+The agent must not automatically add all of these if they are not part of the existing Reports UI or approved requirements.
+
+The goal is:
+
+```text
+Existing Reports UI
+        +
+Real Transaction Data
+        ↓
+Accurate Report Results
+```
+
+not:
+
+```text
+Existing Reports UI
+        +
+New Analytics System
+        ↓
+Unnecessary Complexity
+```
+
+---
+
+# User Ownership / Security
+
+The implementation must preserve the architecture established in Tasks 010 and 011.
+
+Do not:
+
+- Trust a client-provided ownership ID.
+- Allow users to specify another user's `clerk_user_id`.
+- Disable or weaken RLS.
+- Replace RLS with frontend-only filtering.
+- Fetch all users' transactions and filter them manually in the client.
+- Expose service-role credentials.
+- Introduce server-only secrets into browser code.
+- Create a second authentication mechanism.
+
+The existing ownership flow must remain intact:
+
+```text
+Clerk Identity
+      ↓
+Clerk JWT
+      ↓
+Supabase
+      ↓
+PostgreSQL RLS
+      ↓
+Authenticated User's Transactions
+```
+
+---
+
+# UI Behavior
+
+Reuse the existing Reports UI.
+
+This task should focus on **connecting the existing Reports interface to real data**, not redesigning the interface.
+
+Relevant states should be handled:
+
+```text
+Reports requested
+       ↓
+    Loading
+       ↓
+┌─────────────────────┐
+│ Has transaction data│ → Display report data
+│ No transaction data │ → Empty state
+│ Database error      │ → Error state
+└─────────────────────┘
+```
+
+After the data is loaded, the displayed report values should correspond to the user's actual transactions.
+
+---
+
+# Error Handling
+
+The implementation should explicitly handle relevant failures, including:
+
+- Failed transaction loading.
+- Failed report data retrieval.
+- Invalid or unexpected transaction data where relevant.
+- Authentication/session-related failures where relevant.
+- Empty transaction results.
+
+Errors must not be silently swallowed.
+
+User-facing errors should be understandable without exposing sensitive database, authentication, or implementation details.
+
+---
+
+# Expected Changes
+
+The agent must inspect the repository and identify the exact files before implementation.
+
+Potential changes may include:
+
+```text
+src/
+
+├── pages/
+│   └── ReportsPage.jsx
+│
+├── components/
+│   └── report-related components
+│
+├── hooks/
+│   └── existing data hooks
+│
+└── existing Supabase/data utilities
+```
+
+These are examples only.
+
+The agent must not create files merely to satisfy an abstraction.
+
+Reuse existing project patterns where appropriate.
+
+---
+
+# Risks / Things to Verify
+
+Before implementation, specifically inspect:
+
+### 1. Reports UI
+
+Determine exactly what the current Reports page expects.
+
+### 2. Task 010 Architecture
+
+Confirm the established database, authentication, ownership, and data-access architecture.
+
+### 3. Task 011 Transaction CRUD
+
+Confirm how transactions are currently retrieved and represented in the application.
+
+### 4. Transaction Schema
+
+Confirm the actual current transaction fields, including the distinction between:
+
+```text
+date
+occurred_at
+```
+
+Do not assume they are interchangeable.
+
+### 5. Clerk Identity
+
+Confirm how the authenticated Clerk user is represented in the existing application.
+
+### 6. Supabase Integration
+
+Reuse the existing Supabase client/configuration.
+
+### 7. RLS
+
+Preserve the verified ownership policies from previous tasks.
+
+### 8. Category Relationship
+
+If Reports groups data by category, confirm how the existing category relationship is represented.
+
+### 9. State Synchronization
+
+Determine whether Reports needs to refresh/re-fetch data after transaction changes or whether the existing application architecture already handles this.
+
+### 10. Existing Calculations
+
+Identify which report calculations already exist and avoid duplicating them.
+
+---
+
+# Verification Plan
+
+After implementation, verify:
+
+## Data Connection
+
+- Reports retrieves real transaction data from Supabase.
+- No mock/static transaction data remains in the connected Reports flow where real data is expected.
+- Data belongs to the authenticated user.
+
+## Report Accuracy
+
+Verify report values against known transaction records.
+
+At minimum test:
+
+- No transactions.
+- One expense.
+- One income.
+- Multiple income transactions.
+- Multiple expense transactions.
+- Mixed income and expenses.
+- Transactions with different categories.
+- Transactions with different dates.
+
+## UI States
+
+Verify:
+
+- Loading state.
+- Empty state.
+- Error state.
+- Normal populated state.
+
+## Persistence
+
+- Refresh the Reports page.
+- Confirm report data is retrieved from the database again.
+- Confirm values remain consistent with the stored transactions.
+
+## Security / Ownership
+
+- Existing Clerk/Supabase architecture remains intact.
+- RLS remains enabled.
+- Reports does not bypass database ownership protection.
+- No client-side ownership bypass is introduced.
+
+## Regression
+
+Verify that:
+
+- Authentication still works.
+- Transactions still work.
+- Categories still work.
+- Dashboard remains functional.
+- Reports remains functional.
+- Settings remains functional.
+- Existing Light/Dark mode behavior remains intact.
+- Project lint/build/tests are run as applicable.
+
+The agent must report exactly which verification steps were actually performed.
+
+The agent must not claim a check passed if it was not actually run.
+
+---
+
+# Documentation Transparency Rule
+
+If the agent creates or updates **any `.md` file**, it must explicitly report:
+
+- Which `.md` file changed.
+- What was changed.
+- Why it was changed.
+- What impact the change has.
+
+Documentation changes require human review before they are considered accepted or committed.
+
+The agent must not silently modify Markdown documentation.
+
+---
+
+# Human Decision
+
+**Status:** APPROVED
+
+- [x] APPROVED
+- [ ] NEEDS REVISION
+- [ ] REJECTED
+
+# Implementation Result
+
+**Status:** PENDING
+
+This section must only be completed after the human explicitly approves the proposal and the agent is authorized to implement.
+
+After implementation, the agent must document:
+
+- Files changed.
+- What was implemented.
+- Why the changes were made.
+- Impact on existing behavior.
+- Verification performed.
+- Any issues discovered.
+- Any scope changes requested during implementation.
+- Any documentation changes made.
+
+---
+
+# Human Acceptance
+
+**Status:** ACCEPTED
+
+- [x] ACCEPTED
+- [ ] NEEDS REVISION
+
+Final acceptance belongs to the human reviewer.
+
+---
+
+The agent must stop at **Human Review** until explicit approval is provided.
+
+## Current Task
+
+**Task 013 — Reports Date Range Selector**
+
+**Status:** APPROVED
+
+---
+
+## Agent Instructions
+
+Before implementation:
+
+1. Read `AGENT.md`.
+
+2. Read `SKILL.md`.
+
+3. Read `docs/overview.md`.
+
+4. Inspect relevant files under `docs/tasks/`.
+
+5. Review the implementation and decisions from **Task 010 — Architecture / Data Foundation**.
+
+6. Review the implementation and decisions from **Task 011 — Transaction CRUD**.
+
+7. Review the implementation and decisions from **Task 012 — Connect Reports**.
+
+8. Inspect the current Reports UI and identify the existing report-period control currently displaying **"This month"**.
+
+9. Inspect the current Reports data flow and determine how the selected date range is currently applied to report data.
+
+10. Inspect existing date/time utilities, transaction date fields, and report filtering/calculation logic.
+
+11. Determine the smallest reasonable implementation needed to replace the current static **"This month"** control with a selectable report period.
+
+12. Identify the expected files, implementation approach, risks, date-boundary considerations, and verification steps.
+
+13. **Do not implement anything until the human explicitly approves the proposal.**
+
+The agent must not infer approval from this document or from the existence of the task.
+
+---
+
+# Proposed Scope
+
+Once explicitly approved, this task may include:
+
+- Replace the current static **"This month"** Reports period control with a selectable control.
+- Provide the following options:
+  - **This day**
+  - **This week**
+  - **This month**
+  - **This year**
+
+- Keep **"This month"** as the default selection.
+- Apply the selected period to the existing Reports data.
+- Ensure report calculations update when the selected period changes.
+- Reuse the existing Reports architecture and data flow from Task 012.
+- Reuse existing date/time utilities where appropriate.
+- Preserve the existing Clerk/Supabase/RLS ownership architecture.
+- Handle the selected date range consistently with the existing transaction date/time model.
+- Test the resulting date filtering and report calculations.
+
+If implementation requires a change outside this scope, stop and report it before proceeding.
+
+---
+
+# Out of Scope
+
+The following are **not** part of this task unless explicitly approved:
+
+- Redesigning the Reports page.
+- Creating new report types.
+- Creating new analytics.
+- Adding custom date-range selection.
+- Adding date-range calendars/date pickers.
+- Changing the transaction database schema.
+- Changing Transaction CRUD.
+- Changing Categories architecture.
+- Changing Clerk authentication.
+- Changing the established RLS ownership model.
+- Rebuilding the Reports data connection from Task 012.
+- Adding unrelated filters.
+- Adding pagination.
+- Adding export functionality.
+- Adding budgeting features.
+- Adding financial goals.
+- Adding recurring transactions.
+- Introducing a new date library unless clearly justified and explicitly approved.
+- Unrelated refactoring.
+- Unrelated database/schema changes.
+- New dependencies unless justified and approved.
+
+If implementation requires a change outside the approved scope, stop and report it before proceeding.
+
+---
+
+# Agent Proposal
+
+## Recommended Approach
+
+Reuse the existing Reports implementation established in **Task 012**.
+
+The current Reports period control should become a small piece of UI state that determines the date range used by the existing Reports data.
+
+The intended flow should remain:
+
+```text id="3y5l7x"
+User selects report period
+        ↓
+Reports period state
+        ↓
+Determine date range
+        ↓
+Existing transaction/report data
+        ↓
+Existing report calculations
+        ↓
+Reports UI
+```
+
+The implementation should modify the existing Reports filtering/data logic rather than creating a second Reports system.
+
+The selected period should control the existing report data without changing the underlying transaction records.
+
+---
+
+# Report Period Options
+
+The selector must provide exactly these four options:
+
+```text id="q7q5qk"
+This day
+This week
+This month
+This year
+```
+
+Default:
+
+```text id="f3fjh1"
+This month
+```
+
+The currently selected option should be visibly represented by the existing UI pattern.
+
+The agent should reuse the current Reports control styling and interaction patterns where possible.
+
+---
+
+# Date Range Behavior
+
+The intended behavior is:
+
+### This day
+
+Include transactions belonging to the current calendar day.
+
+### This week
+
+Include transactions belonging to the current calendar week.
+
+### This month
+
+Include transactions belonging to the current calendar month.
+
+### This year
+
+Include transactions belonging to the current calendar year.
+
+The agent must inspect the existing code and determine how date boundaries are currently represented and compared.
+
+---
+
+# Week Boundary Requirement
+
+The agent must **not assume** a week convention without inspection.
+
+Before implementation, determine whether the existing application already defines the start of the week.
+
+If an existing convention is present, reuse it.
+
+If no convention exists, the agent must identify this as a decision in its proposal and explicitly state the proposed convention before implementation.
+
+The agent must not silently introduce a new week-boundary rule.
+
+---
+
+# Date / Time Handling
+
+The implementation must respect the existing transaction date/time architecture.
+
+The agent should inspect how the application currently uses:
+
+```text id="j6h5k2"
+date
+occurred_at
+```
+
+The implementation must not assume these fields are interchangeable.
+
+The report-period filtering should be consistent with the existing Reports and Transaction implementation.
+
+Particular attention should be given to:
+
+- Start-of-period boundaries.
+- End-of-period boundaries.
+- Current date/time.
+- Transactions occurring exactly at a boundary.
+- Date/time timezone handling.
+- Existing local date/time utilities.
+
+Avoid introducing custom date manipulation logic if an existing project utility already handles the relevant behavior.
+
+---
+
+# UI Behavior
+
+The current control:
+
+```text id="4s6p1q"
+This month
+```
+
+should become a selector containing:
+
+```text id="y8c4jx"
+This day
+This week
+This month
+This year
+```
+
+The existing Reports visual design should be preserved.
+
+This task is **not** a Reports UI redesign.
+
+When the user changes the selected period:
+
+```text id="h3nq0x"
+Selected period changes
+        ↓
+Report date range changes
+        ↓
+Report data recalculates
+        ↓
+Displayed report values update
+```
+
+The selected period should remain active until changed by the user or until the page is reloaded according to the existing state-management behavior.
+
+---
+
+# Data Handling
+
+The implementation should reuse the existing transaction data source established in Task 012.
+
+Do not:
+
+- Create a second Supabase client.
+- Create a second transaction-fetching architecture.
+- Duplicate transaction data.
+- Modify transaction records when changing the report period.
+- Move filtering logic into an unrelated layer without justification.
+
+The date selector should affect **which existing transaction records are included in the report**, not the transaction data itself.
+
+---
+
+# Report Calculation Behavior
+
+Existing report calculations should remain unchanged unless they need to consume the newly filtered transaction set.
+
+For example:
+
+```text id="7qqx8y"
+All transactions
+      ↓
+Selected date range
+      ↓
+Filtered transactions
+      ↓
+Existing report calculations
+      ↓
+Report values
+```
+
+The agent should not introduce new calculations simply because this task adds date-range selection.
+
+---
+
+# Error / Empty Behavior
+
+Existing loading and error behavior from Task 012 should remain intact.
+
+The agent should verify behavior when the selected period contains:
+
+- Transactions.
+- No transactions.
+- Transactions only outside the selected period.
+- Transactions exactly on date boundaries.
+
+The UI should not display stale report values after the selected period changes.
+
+---
+
+# Security Requirements
+
+The implementation must preserve the architecture established in Tasks 010, 011, and 012.
+
+Do not:
+
+- Trust a client-provided ownership ID.
+- Change `clerk_user_id`.
+- Disable or weaken RLS.
+- Replace RLS with frontend-only ownership protection.
+- Fetch other users' transactions.
+- Expose service-role credentials.
+- Change Clerk authentication.
+- Introduce another authentication mechanism.
+
+The existing ownership architecture remains:
+
+```text id="0m6d3h"
+Clerk
+  ↓
+JWT
+  ↓
+Supabase
+  ↓
+PostgreSQL
+  ↓
+RLS
+  ↓
+Authenticated user's transactions
+  ↓
+Reports filtering
+```
+
+---
+
+# Expected Changes
+
+The agent must inspect the repository and identify the exact files before implementation.
+
+Potential changes may include:
+
+```text id="y8n3k2"
+src/
+
+├── pages/
+│   └── ReportsPage.jsx
+│
+├── components/
+│   └── report-related components
+│
+├── hooks/
+│   └── existing report/data hooks
+│
+└── existing date/report utilities
+```
+
+These are examples only.
+
+The agent must not create unnecessary files merely to satisfy an abstraction.
+
+Reuse existing project patterns where appropriate.
+
+---
+
+# Risks / Things to Verify
+
+Before implementation, specifically inspect:
+
+### 1. Current Reports Period Control
+
+Confirm where the current **"This month"** value is defined and how it is rendered.
+
+### 2. Task 012 Reports Implementation
+
+Confirm how Reports currently obtains transaction data and performs filtering/calculations.
+
+### 3. Date Fields
+
+Confirm how `date` and `occurred_at` are currently used.
+
+### 4. Date Utilities
+
+Determine whether the project already has utilities for:
+
+- Start of day.
+- Start/end of week.
+- Start/end of month.
+- Start/end of year.
+- Local date/time conversion.
+
+### 5. Week Convention
+
+Determine whether the existing application already defines Monday/Sunday or another week boundary.
+
+Do not silently choose a convention if none exists.
+
+### 6. Timezone Behavior
+
+Confirm that period boundaries behave consistently with the application's existing local date/time behavior.
+
+### 7. Existing UI Pattern
+
+Reuse the existing dropdown/select/popover pattern if one already exists elsewhere in the application.
+
+### 8. State Management
+
+Determine the simplest existing pattern for storing the selected report period.
+
+### 9. Data Refresh / Recalculation
+
+Confirm that changing the selection updates the report data without introducing stale results.
+
+### 10. Regression Risk
+
+Ensure the date selector does not affect:
+
+- Transaction CRUD.
+- Categories.
+- Dashboard.
+- Authentication.
+- Other Reports functionality.
+
+---
+
+# Verification Plan
+
+After implementation, verify:
+
+## UI
+
+- The current "This month" control is replaced by a selectable period control.
+- The four required options are present:
+  - This day
+  - This week
+  - This month
+  - This year
+
+- "This month" is the default.
+- Existing Reports styling remains consistent.
+
+## This Day
+
+Verify that:
+
+- Today's transactions are included.
+- Transactions from previous days are excluded.
+- Transactions from future days are excluded.
+
+## This Week
+
+Verify that:
+
+- Transactions within the defined current week are included.
+- Transactions outside the current week are excluded.
+- The configured week boundary behaves correctly.
+
+## This Month
+
+Verify that:
+
+- Current-month transactions are included.
+- Previous-month transactions are excluded.
+- Next-month transactions are excluded.
+
+## This Year
+
+Verify that:
+
+- Current-year transactions are included.
+- Previous-year transactions are excluded.
+- Next-year transactions are excluded.
+
+## Boundary Testing
+
+Verify transactions:
+
+- Exactly at the beginning of a period.
+- Exactly at the end of a period.
+- Just before a period boundary.
+- Just after a period boundary.
+
+## Report Calculations
+
+Verify that changing the selected period updates existing report calculations correctly.
+
+## Empty State
+
+Verify that selecting a period with no transactions produces the existing appropriate empty-state behavior.
+
+## Persistence / Reload
+
+Verify the expected behavior after refreshing the Reports page.
+
+If the selected period is intentionally reset to the default after refresh, confirm that behavior is consistent with the implementation.
+
+## Regression
+
+Verify that:
+
+- Transactions remain functional.
+- Categories remain functional.
+- Dashboard remains functional.
+- Reports remain functional.
+- Authentication remains functional.
+- Light/Dark mode remains functional.
+- Existing Task 012 functionality remains intact.
+- Project lint/build/tests are run as applicable.
+
+The agent must report exactly which verification steps were actually performed.
+
+The agent must not claim a check passed if it was not actually run.
+
+---
+
+# Documentation Transparency Rule
+
+If the agent creates or updates **any `.md` file**, it must explicitly report:
+
+- Which `.md` file changed.
+- What was changed.
+- Why it was changed.
+- What impact the change has.
+
+Documentation changes require human review before they are considered accepted or committed.
+
+The agent must not silently modify Markdown documentation.
+
+---
+
+# Human Decision
+
+**Status:** APPROVED
+
+- [x] APPROVED
+- [ ] NEEDS REVISION
+- [ ] REJECTED
+
+# Implementation Result
+
+**Status:** PENDING
+
+This section must only be completed after the human explicitly approves the proposal and the agent is authorized to implement.
+
+After implementation, the agent must document:
+
+- Files changed.
+- What was implemented.
+- Why the changes were made.
+- Impact on existing behavior.
+- Verification performed.
+- Any issues discovered.
+- Any scope changes requested during implementation.
+- Any documentation changes made.
+
+---
+
+# Human Acceptance
+
+**Status:** ACCEPTED
+
+- [x] ACCEPTED
+- [ ] NEEDS REVISION
+
+Final acceptance belongs to the human reviewer.
+
+---
+
+The agent must stop at **Human Review** until explicit approval is provided.
