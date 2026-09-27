@@ -5,10 +5,15 @@ This directory contains schema and ownership tests for the transaction data foun
 ## Included test files
 
 - `transaction_rls.test.sql`
+- `reset_user_data.test.sql`
 
 ## Status
 
 These tests are prepared for execution in a local Supabase environment with Docker/Podman available.
+
+`reset_user_data.test.sql` verifies that the authenticated reset operation removes
+the caller's transactions, categories, and payment methods while preserving a
+second user's records.
 
 ## Important note
 

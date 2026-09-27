@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth, useUser } from "@clerk/react";
 import {
   FiArrowDownLeft,
@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import SidebarNav from "../components/SidebarNav";
 import { loadCategories } from "../lib/categories";
+import { formatSignedCurrency } from "../lib/currency";
 import { createSupabaseClient } from "../lib/supabase";
 
 const emptyFormState = {
@@ -23,6 +24,14 @@ const emptyFormState = {
 };
 
 const defaultPaymentMethodNames = ["Cash", "Credit Card"];
+const transactionFieldLabels = {
+  description: "Description",
+  amount: "Amount",
+  type: "Type",
+  category_id: "Category",
+  payment_method_id: "Payment method",
+  occurredAt: "Date and time",
+};
 
 const loadReferenceRowsWithDefaults = async (
   supabase,
@@ -59,16 +68,11 @@ const loadReferenceRowsWithDefaults = async (
   return seededResult.data ?? [];
 };
 
-const formatCurrency = (amount, type) => {
-  const value = Number(amount) || 0;
-  const formattedValue = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-  }).format(Math.abs(value));
-
-  return type === "income" ? `+${formattedValue}` : `-${formattedValue}`;
-};
+const formatTransactionAmount = (amount, type, currency) =>
+  formatSignedCurrency(
+    Math.abs(Number(amount) || 0) * (type === "income" ? 1 : -1),
+    currency,
+  );
 
 const formatDate = (value) => {
   if (!value) {
@@ -120,7 +124,11 @@ const normalizeTransaction = (record) => ({
   },
 });
 
-export default function TransactionsPage({ currentView, onSelectView }) {
+export default function TransactionsPage({
+  currentView,
+  onSelectView,
+  currency,
+}) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const supabase = useMemo(() => {
@@ -136,15 +144,48 @@ export default function TransactionsPage({ currentView, onSelectView }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [formState, setFormState] = useState(emptyFormState);
+  const categoryMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isCategoryMenuOpen) {
+      return undefined;
+    }
+
+    const closeMenuOnOutsideClick = (event) => {
+      if (!categoryMenuRef.current?.contains(event.target)) {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeMenuOnOutsideClick);
+    return () =>
+      document.removeEventListener("pointerdown", closeMenuOnOutsideClick);
+  }, [isCategoryMenuOpen]);
 
   const resetForm = () => {
     setIsFormOpen(false);
     setEditingId(null);
     setFormState(emptyFormState);
     setErrorMessage("");
+    setValidationErrors({});
+  };
+
+  const updateFormField = (field, value) => {
+    setFormState((currentState) => ({ ...currentState, [field]: value }));
+    setValidationErrors((currentErrors) => {
+      if (!currentErrors[field]) {
+        return currentErrors;
+      }
+
+      const nextErrors = { ...currentErrors };
+      delete nextErrors[field];
+      return nextErrors;
+    });
   };
 
   const openAddForm = () => {
@@ -161,6 +202,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
       occurredAt: toLocalDateTimeInput(new Date()),
     });
     setErrorMessage("");
+    setValidationErrors({});
     setIsFormOpen(true);
   };
 
@@ -175,6 +217,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
       occurredAt: transaction.occurredAt,
     });
     setErrorMessage("");
+    setValidationErrors({});
     setIsFormOpen(true);
   };
 
@@ -253,30 +296,53 @@ export default function TransactionsPage({ currentView, onSelectView }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!user?.id) {
-      setErrorMessage("You must be signed in to save transactions.");
-      return;
-    }
-
     const trimmedDescription = formState.description.trim();
     const amountValue = Number(formState.amount);
+    const amountInput = event.currentTarget.elements.namedItem("amount");
+    const occurredAtDate = new Date(formState.occurredAt);
+    const nextValidationErrors = {};
 
     if (!trimmedDescription) {
-      setErrorMessage("Description is required.");
-      return;
-    }
-
-    if (!Number.isFinite(amountValue) || amountValue <= 0) {
-      setErrorMessage("Amount must be greater than zero.");
-      return;
+      nextValidationErrors.description = "Enter a description.";
     }
 
     if (
-      !formState.category_id ||
-      !formState.payment_method_id ||
-      !formState.occurredAt
+      !Number.isFinite(amountValue) ||
+      amountValue <= 0 ||
+      !amountInput?.validity.valid
     ) {
-      setErrorMessage("Category, payment method, and date are required.");
+      nextValidationErrors.amount = "Enter an amount greater than zero.";
+    }
+
+    if (!["income", "expense"].includes(formState.type)) {
+      nextValidationErrors.type = "Choose income or expense.";
+    }
+
+    if (!categories.some((category) => category.id === formState.category_id)) {
+      nextValidationErrors.category_id = "Choose a category.";
+    }
+
+    if (
+      !paymentMethods.some(
+        (paymentMethod) => paymentMethod.id === formState.payment_method_id,
+      )
+    ) {
+      nextValidationErrors.payment_method_id = "Choose a payment method.";
+    }
+
+    if (!formState.occurredAt || Number.isNaN(occurredAtDate.getTime())) {
+      nextValidationErrors.occurredAt = "Enter a valid date and time.";
+    }
+
+    setValidationErrors(nextValidationErrors);
+    setErrorMessage("");
+
+    if (Object.keys(nextValidationErrors).length > 0) {
+      return;
+    }
+
+    if (!user?.id) {
+      setErrorMessage("You must be signed in to save transactions.");
       return;
     }
 
@@ -288,7 +354,7 @@ export default function TransactionsPage({ currentView, onSelectView }) {
       category_id: formState.category_id,
       payment_method_id: formState.payment_method_id,
       date: formState.occurredAt.slice(0, 10),
-      occurred_at: new Date(formState.occurredAt).toISOString(),
+      occurred_at: occurredAtDate.toISOString(),
     };
 
     try {
@@ -516,7 +582,11 @@ export default function TransactionsPage({ currentView, onSelectView }) {
                     <span
                       className={`font-semibold ${transaction.type === "income" ? "text-[var(--brand)]" : "text-[var(--text-secondary)]"}`}
                     >
-                      {formatCurrency(transaction.amount, transaction.type)}
+                      {formatTransactionAmount(
+                        transaction.amount,
+                        transaction.type,
+                        currency,
+                      )}
                     </span>
                     <span>{transaction.category?.name ?? "Unknown"}</span>
                     <span>{transaction.paymentMethod?.name ?? "Unknown"}</span>
@@ -571,40 +641,81 @@ export default function TransactionsPage({ currentView, onSelectView }) {
               </button>
             </div>
 
-            <form className="grid gap-4" onSubmit={handleSubmit}>
+            <form className="grid gap-4" noValidate onSubmit={handleSubmit}>
+              {Object.keys(validationErrors).length > 0 ?
+                <div
+                  className="rounded-[8px] border border-[#f2d1c4] bg-[#fff3f0] px-4 py-3 text-sm text-[#8a3c26]"
+                  role="alert"
+                >
+                  <p className="font-semibold">
+                    Please check the highlighted fields:
+                  </p>
+                  <ul className="mt-1 list-inside list-disc">
+                    {Object.keys(validationErrors).map((field) => (
+                      <li key={field}>{transactionFieldLabels[field]}</li>
+                    ))}
+                  </ul>
+                </div>
+              : null}
+
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2 text-sm text-[var(--text-primary)]">
                   <span className="font-semibold">Description</span>
                   <input
-                    className="min-h-[42px] rounded-[8px] border border-[var(--border)] bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]"
+                    aria-describedby={
+                      validationErrors.description ?
+                        "transaction-description-error"
+                      : undefined
+                    }
+                    aria-invalid={Boolean(validationErrors.description)}
+                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.description ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
                     type="text"
+                    required
                     value={formState.description}
                     onChange={(event) =>
-                      setFormState((currentState) => ({
-                        ...currentState,
-                        description: event.target.value,
-                      }))
+                      updateFormField("description", event.target.value)
                     }
                     placeholder="Groceries, salary, rent..."
                   />
+                  {validationErrors.description ?
+                    <span
+                      className="text-xs text-[#8a3c26]"
+                      id="transaction-description-error"
+                    >
+                      {validationErrors.description}
+                    </span>
+                  : null}
                 </label>
 
                 <label className="grid gap-2 text-sm text-[var(--text-primary)]">
                   <span className="font-semibold">Amount</span>
                   <input
-                    className="min-h-[42px] rounded-[8px] border border-[var(--border)] bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]"
+                    aria-describedby={
+                      validationErrors.amount ?
+                        "transaction-amount-error"
+                      : undefined
+                    }
+                    aria-invalid={Boolean(validationErrors.amount)}
+                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.amount ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
                     type="number"
+                    name="amount"
                     min="0.01"
                     step="0.01"
+                    required
                     value={formState.amount}
                     onChange={(event) =>
-                      setFormState((currentState) => ({
-                        ...currentState,
-                        amount: event.target.value,
-                      }))
+                      updateFormField("amount", event.target.value)
                     }
                     placeholder="0.00"
                   />
+                  {validationErrors.amount ?
+                    <span
+                      className="text-xs text-[#8a3c26]"
+                      id="transaction-amount-error"
+                    >
+                      {validationErrors.amount}
+                    </span>
+                  : null}
                 </label>
               </div>
 
@@ -612,68 +723,146 @@ export default function TransactionsPage({ currentView, onSelectView }) {
                 <label className="grid gap-2 text-sm text-[var(--text-primary)]">
                   <span className="font-semibold">Type</span>
                   <select
-                    className="min-h-[42px] rounded-[8px] border border-[var(--border)] bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]"
+                    aria-describedby={
+                      validationErrors.type ?
+                        "transaction-type-error"
+                      : undefined
+                    }
+                    aria-invalid={Boolean(validationErrors.type)}
+                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.type ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
+                    required
                     value={formState.type}
                     onChange={(event) =>
-                      setFormState((currentState) => ({
-                        ...currentState,
-                        type: event.target.value,
-                      }))
+                      updateFormField("type", event.target.value)
                     }
                   >
                     <option value="expense">Expense</option>
                     <option value="income">Income</option>
                   </select>
+                  {validationErrors.type ?
+                    <span
+                      className="text-xs text-[#8a3c26]"
+                      id="transaction-type-error"
+                    >
+                      {validationErrors.type}
+                    </span>
+                  : null}
                 </label>
 
                 <label className="grid gap-2 text-sm text-[var(--text-primary)]">
                   <span className="font-semibold">Date and time</span>
                   <input
-                    className="min-h-[42px] rounded-[8px] border border-[var(--border)] bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]"
+                    aria-describedby={
+                      validationErrors.occurredAt ?
+                        "transaction-date-error"
+                      : undefined
+                    }
+                    aria-invalid={Boolean(validationErrors.occurredAt)}
+                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
                     type="datetime-local"
+                    required
                     value={formState.occurredAt}
                     onChange={(event) =>
-                      setFormState((currentState) => ({
-                        ...currentState,
-                        occurredAt: event.target.value,
-                      }))
+                      updateFormField("occurredAt", event.target.value)
                     }
                   />
+                  {validationErrors.occurredAt ?
+                    <span
+                      className="text-xs text-[#8a3c26]"
+                      id="transaction-date-error"
+                    >
+                      {validationErrors.occurredAt}
+                    </span>
+                  : null}
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2 text-sm text-[var(--text-primary)]">
+                <div
+                  className="relative grid gap-2 text-sm text-[var(--text-primary)]"
+                  ref={categoryMenuRef}
+                >
                   <span className="font-semibold">Category</span>
-                  <select
-                    className="min-h-[42px] rounded-[8px] border border-[var(--border)] bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e] focus:outline-none focus:ring-2 focus:ring-[#dfeae4] [&_option]:bg-[var(--surface)] [&_option]:text-[var(--text-primary)] [&_option:checked]:bg-[var(--brand)] [&_option:checked]:text-[var(--surface)]"
-                    value={formState.category_id}
-                    onChange={(event) =>
-                      setFormState((currentState) => ({
-                        ...currentState,
-                        category_id: event.target.value,
-                      }))
+                  <button
+                    aria-controls="transaction-category-options"
+                    aria-describedby={
+                      validationErrors.category_id ?
+                        "transaction-category-error"
+                      : undefined
                     }
+                    aria-expanded={isCategoryMenuOpen}
+                    aria-invalid={Boolean(validationErrors.category_id)}
+                    aria-haspopup="menu"
+                    className={`flex min-h-[42px] w-full items-center justify-between rounded-[8px] border ${validationErrors.category_id ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-left text-[var(--text-primary)] outline-none transition focus:border-[#0f766e] focus:ring-2 focus:ring-[#dfeae4]`}
+                    onClick={() => setIsCategoryMenuOpen((isOpen) => !isOpen)}
+                    type="button"
                   >
-                    <option value="">Select a category</option>
-                    {orderedCategories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <span>
+                      {orderedCategories.find(
+                        (category) => category.id === formState.category_id,
+                      )?.name ?? "Select a category"}
+                    </span>
+                    <span aria-hidden="true">▾</span>
+                  </button>
+                  {isCategoryMenuOpen ?
+                    <div
+                      className="absolute top-full z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-[8px] border border-[var(--border)] bg-[var(--surface)] py-1 shadow-[0_12px_28px_rgba(15,23,42,0.2)]"
+                      id="transaction-category-options"
+                      role="menu"
+                    >
+                      <button
+                        aria-checked={!formState.category_id}
+                        className="block min-h-9 w-full px-3 text-left text-[var(--text-primary)] hover:bg-[var(--brand-soft)] focus:bg-[var(--brand-soft)] focus:outline-none"
+                        onClick={() => {
+                          updateFormField("category_id", "");
+                          setIsCategoryMenuOpen(false);
+                        }}
+                        role="menuitemradio"
+                        type="button"
+                      >
+                        Select a category
+                      </button>
+                      {orderedCategories.map((category) => (
+                        <button
+                          aria-checked={formState.category_id === category.id}
+                          className="block min-h-9 w-full px-3 text-left text-[var(--text-primary)] hover:bg-[var(--brand-soft)] focus:bg-[var(--brand-soft)] focus:outline-none"
+                          key={category.id}
+                          onClick={() => {
+                            updateFormField("category_id", category.id);
+                            setIsCategoryMenuOpen(false);
+                          }}
+                          role="menuitemradio"
+                          type="button"
+                        >
+                          {category.name}
+                        </button>
+                      ))}
+                    </div>
+                  : null}
+                  {validationErrors.category_id ?
+                    <span
+                      className="text-xs text-[#8a3c26]"
+                      id="transaction-category-error"
+                    >
+                      {validationErrors.category_id}
+                    </span>
+                  : null}
+                </div>
 
                 <label className="grid gap-2 text-sm text-[var(--text-primary)]">
                   <span className="font-semibold">Payment method</span>
                   <select
-                    className="min-h-[42px] rounded-[8px] border border-[var(--border)] bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]"
+                    aria-describedby={
+                      validationErrors.payment_method_id ?
+                        "transaction-payment-method-error"
+                      : undefined
+                    }
+                    aria-invalid={Boolean(validationErrors.payment_method_id)}
+                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.payment_method_id ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
+                    required
                     value={formState.payment_method_id}
                     onChange={(event) =>
-                      setFormState((currentState) => ({
-                        ...currentState,
-                        payment_method_id: event.target.value,
-                      }))
+                      updateFormField("payment_method_id", event.target.value)
                     }
                   >
                     <option value="">Select a payment method</option>
@@ -683,6 +872,14 @@ export default function TransactionsPage({ currentView, onSelectView }) {
                       </option>
                     ))}
                   </select>
+                  {validationErrors.payment_method_id ?
+                    <span
+                      className="text-xs text-[#8a3c26]"
+                      id="transaction-payment-method-error"
+                    >
+                      {validationErrors.payment_method_id}
+                    </span>
+                  : null}
                 </label>
               </div>
 

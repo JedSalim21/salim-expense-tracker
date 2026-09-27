@@ -9,6 +9,17 @@ import {
   useAuth,
 } from "@clerk/react";
 import { FiDollarSign, FiLogIn, FiLogOut, FiUserPlus } from "react-icons/fi";
+import packageJson from "../package.json";
+import {
+  DEFAULT_CURRENCY,
+  DEFAULT_THEME,
+  clearAppStorage,
+  getSettingsExportPayload,
+  getStoredCurrency,
+  getStoredTheme,
+  normalizeCurrencyCode,
+} from "./lib/settings";
+import { createSupabaseClient } from "./lib/supabase";
 import CategoriesPage from "./pages/CategoriesPage";
 import Dashboard from "./pages/Dashboard";
 import ReportsPage from "./pages/ReportsPage";
@@ -16,25 +27,87 @@ import SettingsPage from "./pages/SettingsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 
 function App() {
-  const { isLoaded } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [activeView, setActiveView] = useState("dashboard");
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") {
-      return "dark";
-    }
-
-    const savedTheme = window.localStorage.getItem("salimspend-theme");
-    if (savedTheme === "light" || savedTheme === "dark") {
-      return savedTheme;
-    }
-
-    return "dark";
-  });
+  const [theme, setTheme] = useState(() => getStoredTheme());
+  const [currency, setCurrency] = useState(() => getStoredCurrency());
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetStatus, setResetStatus] = useState(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     window.localStorage.setItem("salimspend-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem("salimspend-currency", currency);
+  }, [currency]);
+
+  const handleExportData = () => {
+    const payload = getSettingsExportPayload({
+      theme,
+      currency,
+      appVersion: packageJson.version,
+    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `salimspend-settings-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleResetData = async () => {
+    setResetStatus(null);
+    const confirmed = window.confirm(
+      "This permanently deletes your SalimSpend transactions, categories, payment methods, and saved preferences. It does not delete your Clerk account or sign you out. Continue?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      if (!isLoaded || !isSignedIn) {
+        throw new Error(
+          "Authentication is required to reset application data.",
+        );
+      }
+
+      const supabase = createSupabaseClient(getToken);
+      const { error } = await supabase.rpc("reset_user_data");
+
+      if (error) {
+        throw error;
+      }
+
+      clearAppStorage();
+      setTheme(DEFAULT_THEME);
+      setCurrency(DEFAULT_CURRENCY);
+      setResetStatus({
+        type: "success",
+        message:
+          "Your SalimSpend data has been reset. Your account is unchanged.",
+      });
+    } catch (error) {
+      console.error("Unable to reset SalimSpend application data.", error);
+      setResetStatus({
+        type: "error",
+        message:
+          "The reset could not be confirmed. Reload to check your data before trying again.",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   if (!isLoaded) {
     return (
@@ -160,6 +233,7 @@ function App() {
             <TransactionsPage
               currentView={activeView}
               onSelectView={setActiveView}
+              currency={currency}
             />
           : activeView === "categories" ?
             <CategoriesPage
@@ -170,19 +244,34 @@ function App() {
             <ReportsPage
               currentView={activeView}
               onSelectView={setActiveView}
+              currency={currency}
             />
           : activeView === "settings" ?
             <SettingsPage
               currentView={activeView}
               onSelectView={setActiveView}
               theme={theme}
+              currency={currency}
+              appVersion={packageJson.version}
+              isResetting={isResetting}
+              resetStatus={resetStatus}
               onToggleTheme={() =>
                 setTheme((currentTheme) =>
                   currentTheme === "dark" ? "light" : "dark",
                 )
               }
+              onCurrencyChange={(nextCurrency) =>
+                setCurrency(normalizeCurrencyCode(nextCurrency))
+              }
+              onExportData={handleExportData}
+              onResetAllData={handleResetData}
             />
-          : <Dashboard currentView={activeView} onSelectView={setActiveView} />}
+          : <Dashboard
+              currentView={activeView}
+              onSelectView={setActiveView}
+              currency={currency}
+            />
+          }
         </Show>
       </main>
     </>

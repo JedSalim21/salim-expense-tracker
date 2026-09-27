@@ -1,3 +1,8 @@
+import {
+  formatCurrency as formatCurrencyValue,
+  formatSignedCurrency as formatSignedCurrencyValue,
+} from "./currency.js";
+
 const defaultCategoryPalette = [
   "#0f766e",
   "#f59e0b",
@@ -8,20 +13,6 @@ const defaultCategoryPalette = [
   "#14b8a6",
   "#ef4444",
 ];
-
-function toCurrency(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value) || 0);
-}
-
-function toSignedCurrency(value) {
-  const formattedValue = toCurrency(Math.abs(Number(value) || 0));
-  return value >= 0 ? `+${formattedValue}` : `-${formattedValue}`;
-}
 
 function getMonthKey(dateValue) {
   const date = new Date(dateValue);
@@ -245,12 +236,11 @@ export function calculateReportMetrics(
     ...item,
     amount: Number(item.amount) || 0,
     percent: Number(item.percent) || 0,
-    formattedAmount: toCurrency(item.amount),
   }));
 
   const topCategories = breakdown.slice(0, 4).map((item) => ({
     name: item.label,
-    amount: toCurrency(item.amount),
+    amount: item.amount,
     percent: item.percent,
     color: item.color,
     change: "+0.0%",
@@ -259,29 +249,23 @@ export function calculateReportMetrics(
   const insights = [];
   if (breakdown.length > 0) {
     const strongestCategory = breakdown[0];
-    insights.push(
-      `${strongestCategory.label} is your biggest spend area, accounting for ${strongestCategory.percent.toFixed(1)}% of expenses.`,
-    );
+    insights.push({
+      type: "top-category",
+      category: strongestCategory.label,
+      percent: strongestCategory.percent,
+    });
   }
 
   if (netCashFlow >= 0) {
-    insights.push(
-      `Net cash flow is positive at ${toSignedCurrency(netCashFlow)} for this period.`,
-    );
+    insights.push({ type: "positive-cash-flow", amount: netCashFlow });
   } else {
-    insights.push(
-      `You are currently below your income by ${toSignedCurrency(netCashFlow)} for this period.`,
-    );
+    insights.push({ type: "negative-cash-flow", amount: netCashFlow });
   }
 
   if (savingsRate > 0) {
-    insights.push(
-      `Your savings rate is ${savingsRate.toFixed(1)}% based on the selected period's income.`,
-    );
+    insights.push({ type: "savings-rate", rate: savingsRate });
   } else if (expenseTotal > 0) {
-    insights.push(
-      "Your expenses remain above income for this period, so cash flow is tightening.",
-    );
+    insights.push({ type: "cash-flow-tightening" });
   }
 
   return {
@@ -298,10 +282,27 @@ export function calculateReportMetrics(
   };
 }
 
-export function formatCurrency(value) {
-  return toCurrency(value);
+export function formatCurrency(value, currency) {
+  return formatCurrencyValue(value, currency);
 }
 
-export function formatSignedCurrency(value) {
-  return toSignedCurrency(value);
+export function formatSignedCurrency(value, currency) {
+  return formatSignedCurrencyValue(value, currency);
+}
+
+export function formatReportInsight(insight, currency) {
+  switch (insight.type) {
+    case "top-category":
+      return `${insight.category} is your biggest spend area, accounting for ${insight.percent.toFixed(1)}% of expenses.`;
+    case "positive-cash-flow":
+      return `Net cash flow is positive at ${formatSignedCurrencyValue(insight.amount, currency)} for this period.`;
+    case "negative-cash-flow":
+      return `You are currently below your income by ${formatSignedCurrencyValue(insight.amount, currency)} for this period.`;
+    case "savings-rate":
+      return `Your savings rate is ${insight.rate.toFixed(1)}% based on the selected period's income.`;
+    case "cash-flow-tightening":
+      return "Your expenses remain above income for this period, so cash flow is tightening.";
+    default:
+      return "Add transactions to start building your spending report.";
+  }
 }

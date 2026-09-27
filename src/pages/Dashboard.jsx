@@ -9,29 +9,30 @@ import {
   FiTrendingUp,
 } from "react-icons/fi";
 import SidebarNav from "../components/SidebarNav";
+import { formatCurrency, formatSignedCurrency } from "../lib/currency";
 
 const summaryCards = [
   {
     label: "Total balance",
-    value: "₱12,480.60",
+    value: 12480.6,
     detail: "+8.4% from last month",
     tone: "teal",
   },
   {
     label: "This month's income",
-    value: "₱6,840.00",
+    value: 6840,
     detail: "+12.1% from last month",
     tone: "blue",
   },
   {
     label: "This month's expenses",
-    value: "₱3,290.40",
+    value: 3290.4,
     detail: "-4.6% from last month",
     tone: "amber",
   },
   {
     label: "Available to save",
-    value: "₱3,549.60",
+    value: 3549.6,
     detail: "52% of monthly income",
     tone: "rose",
   },
@@ -56,7 +57,7 @@ const recentTransactions = [
     merchant: "Whole Foods Market",
     category: "Groceries",
     date: "Today, 09:42",
-    amount: "-₱86.24",
+    amount: -86.24,
     color: "green",
     glyph: "W",
   },
@@ -64,7 +65,7 @@ const recentTransactions = [
     merchant: "Notion",
     category: "Subscriptions",
     date: "Yesterday, 16:10",
-    amount: "-₱12.00",
+    amount: -12,
     color: "violet",
     glyph: "N",
   },
@@ -72,7 +73,7 @@ const recentTransactions = [
     merchant: "Northstar Studio",
     category: "Freelance income",
     date: "Sep 18, 11:25",
-    amount: "+₱1,250.00",
+    amount: 1250,
     color: "yellow",
     glyph: "N",
   },
@@ -80,7 +81,7 @@ const recentTransactions = [
     merchant: "Metro Transit",
     category: "Transport",
     date: "Sep 17, 08:04",
-    amount: "-₱42.80",
+    amount: -42.8,
     color: "blue",
     glyph: "M",
   },
@@ -94,10 +95,10 @@ const avatarClasses = {
 };
 
 const spendingCategories = [
-  { label: "Home", amount: "₱1,120", percent: 34, color: "#0f766e" },
-  { label: "Food", amount: "₱738", percent: 22, color: "#f59e0b" },
-  { label: "Transport", amount: "₱462", percent: 14, color: "#3b82f6" },
-  { label: "Lifestyle", amount: "₱386", percent: 12, color: "#e879a8" },
+  { label: "Home", amount: 1120, percent: 34, color: "#0f766e" },
+  { label: "Food", amount: 738, percent: 22, color: "#f59e0b" },
+  { label: "Transport", amount: 462, percent: 14, color: "#3b82f6" },
+  { label: "Lifestyle", amount: 386, percent: 12, color: "#e879a8" },
 ];
 
 const cashFlow = [
@@ -109,7 +110,7 @@ const cashFlow = [
   { month: "Sep", income: 88, expenses: 44 },
 ];
 
-export default function Dashboard({ currentView, onSelectView }) {
+export default function Dashboard({ currentView, onSelectView, currency }) {
   return (
     <section
       className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
@@ -163,7 +164,7 @@ export default function Dashboard({ currentView, onSelectView }) {
                   <Icon className="text-base" aria-hidden="true" />
                 </div>
                 <strong className="mt-4 block font-serif text-[25px] font-normal tracking-[-0.01em] text-[var(--text-heading)] max-[680px]:text-xl">
-                  {card.value}
+                  {formatCurrency(card.value, currency)}
                 </strong>
                 <span className="mt-[7px] block text-[11px] font-bold text-[#0f766e]">
                   {card.detail}
@@ -202,12 +203,10 @@ export default function Dashboard({ currentView, onSelectView }) {
               className="mt-[18px] flex h-[204px]"
               aria-label="Bar chart comparing income and expenses from April to September"
             >
-              <div className="flex w-[29px] flex-col justify-between pb-[23px] pt-1 font-mono text-[9px] text-[#adb2aa]">
-                <span>₱8k</span>
-                <span>₱6k</span>
-                <span>₱4k</span>
-                <span>₱2k</span>
-                <span>₱0</span>
+              <div className="flex w-[88px] shrink-0 flex-col justify-between pb-[23px] pt-1 font-mono text-[8px] text-[#adb2aa]">
+                {[8000, 6000, 4000, 2000, 0].map((amount) => (
+                  <span key={amount}>{formatCurrency(amount, currency)}</span>
+                ))}
               </div>
               <div className="relative grid min-w-0 flex-1 grid-cols-6 gap-[10px] border-b border-[#e4e5df]">
                 <div className="pointer-events-none absolute inset-x-0 bottom-[23px] top-0 flex flex-col justify-between">
@@ -270,7 +269,7 @@ export default function Dashboard({ currentView, onSelectView }) {
               >
                 <div className="grid h-[88px] w-[88px] place-items-center rounded-full bg-[#fffefa] max-[680px]:h-[78px] max-[680px]:w-[78px]">
                   <strong className="font-serif text-xl font-normal text-[var(--text-heading)] max-[680px]:text-[17px]">
-                    ₱3,290
+                    {formatCurrency(3290.4, currency)}
                   </strong>
                   <span className="-mt-5 text-[10px] text-[#9a9d95]">
                     spent
@@ -293,7 +292,7 @@ export default function Dashboard({ currentView, onSelectView }) {
                     <strong className="text-right text-[11px] text-[var(--text-primary)]">
                       {category.percent}%
                     </strong>
-                    <span>{category.amount}</span>
+                    <span>{formatCurrency(category.amount, currency)}</span>
                   </div>
                 ))}
               </div>
@@ -352,9 +351,9 @@ export default function Dashboard({ currentView, onSelectView }) {
                   {transaction.date}
                 </time>
                 <strong
-                  className={`text-right text-xs ${transaction.amount.startsWith("+") ? "text-[#0f766e]" : "text-[#5e6863]"}`}
+                  className={`text-right text-xs ${transaction.amount > 0 ? "text-[#0f766e]" : "text-[#5e6863]"}`}
                 >
-                  {transaction.amount}
+                  {formatSignedCurrency(transaction.amount, currency)}
                 </strong>
               </div>
             ))}

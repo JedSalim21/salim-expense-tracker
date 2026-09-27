@@ -4499,3 +4499,1528 @@ Final acceptance belongs to the human reviewer.
 ---
 
 The agent must stop at **Human Review** until explicit approval is provided.
+
+**Task 014 — Settings Page**
+
+### Status
+
+**APPROVED**
+
+This task will implement the Settings page for SalimSpend using the existing application architecture, UI patterns, authentication flow, and data ownership rules.
+
+The goal is to provide users with a central place to manage application preferences, data management actions, and basic application information.
+
+---
+
+# Agent Instructions
+
+Before making any implementation changes, the agent must:
+
+1. Read `AGENT.md`.
+2. Read `SKILL.md`.
+3. Read `docs/overview.md`.
+4. Read all relevant existing task/spec/architecture documentation.
+5. Inspect the current Settings page and routing structure.
+6. Inspect the existing theme/appearance implementation.
+7. Inspect the existing user-data architecture and Supabase tables.
+8. Inspect existing data-access utilities/hooks/services before creating new ones.
+9. Inspect the existing application version source.
+10. Inspect whether Privacy Policy and Terms of Service already exist.
+11. Propose the implementation approach and affected files in `agent-review.md`.
+12. **STOP and wait for explicit human approval.**
+
+The agent must **not implement anything before human approval**.
+
+The existence of this task proposal does not constitute approval.
+
+---
+
+# Proposed Scope
+
+Task 014 will implement the Settings page with the following sections:
+
+## 1. Appearance
+
+Preserve the application's existing dark/light mode functionality.
+
+The agent should:
+
+- inspect the current theme implementation;
+- reuse the existing theme system;
+- expose the existing theme control through Settings;
+- preserve the current behavior and styling;
+- avoid replacing the existing theme architecture unless required.
+
+No new theme system should be introduced.
+
+---
+
+# 2. Currency Setting
+
+Add a Currency section to Settings.
+
+The section should provide a selectable currency preference such as:
+
+- PHP — Philippine Peso
+- USD — US Dollar
+- EUR — Euro
+- other reasonable commonly supported currencies if consistent with the existing architecture.
+
+The selected currency should be treated as a **real user preference** and should persist appropriately.
+
+However, currency integration across the application's monetary displays is **out of scope for Task 014**.
+
+Task 014 should establish and persist the preference cleanly.
+
+A separate future task will handle applying the selected currency throughout:
+
+- Dashboard
+- Transactions
+- Reports
+- other monetary displays
+
+That future task is expected to be **Task 015 — Currency Integration**.
+
+The agent must inspect the existing architecture and determine the smallest appropriate persistence mechanism.
+
+The agent must not introduce unnecessary database/schema changes.
+
+If persistence requires architectural changes beyond the current scope, the agent must identify them in the proposal and wait for human approval.
+
+---
+
+# 3. Data Management
+
+## 3.1 Export Data
+
+Provide an Export Data action for the authenticated user.
+
+Before implementation, the agent must inspect the actual application data model and determine which user-owned application data should be included.
+
+The agent must not assume table names or fields.
+
+The export must:
+
+- contain only data belonging to the authenticated user;
+- respect existing Clerk/Supabase ownership architecture;
+- respect RLS;
+- not expose credentials, authentication secrets, service-role information, or other users' data;
+- use the existing data-access architecture where possible.
+
+The agent should recommend the simplest appropriate export format based on the existing application architecture.
+
+If multiple export formats are proposed, they must be explicitly identified before implementation.
+
+---
+
+## 3.2 Reset All Data
+
+Provide a Reset All Data action.
+
+Because this is destructive, the action must require explicit user confirmation.
+
+Reset must only affect the authenticated user's **application data**.
+
+It must NOT:
+
+- delete the user's Clerk account;
+- delete authentication credentials;
+- modify other users' data;
+- remove application configuration;
+- bypass ownership protections;
+- silently perform destructive operations.
+
+Before implementation, the agent must inspect:
+
+- all relevant user-owned tables;
+- foreign-key relationships;
+- deletion order;
+- RLS policies;
+- existing data-access functions.
+
+If the reset operation requires schema/RLS changes outside this task's scope, the agent must stop and report the issue rather than making those changes automatically.
+
+---
+
+# 4. About
+
+The Settings page should include an About section containing:
+
+- Application version
+- Privacy Policy
+- Terms of Service
+
+The agent should inspect the current application for existing:
+
+- version information;
+- Privacy Policy route/page;
+- Terms of Service route/page.
+
+The version should preferably come from the application's actual version source rather than being independently hardcoded.
+
+If Privacy Policy or Terms of Service content does not currently exist, the agent must identify this as a gap.
+
+The agent must not invent legal policy content without explicit human approval.
+
+---
+
+# Out of Scope
+
+The following are explicitly outside Task 014:
+
+- Currency integration across Dashboard/Transactions/Reports.
+- Currency conversion or exchange-rate functionality.
+- Automatic exchange-rate fetching.
+- Dashboard redesign.
+- Transactions redesign.
+- Reports redesign.
+- New analytics.
+- Budget functionality.
+- Recurring transactions.
+- Account deletion.
+- Clerk account management.
+- Password reset functionality.
+- Profile management unless already part of the existing Settings architecture.
+- Notification preferences.
+- New authentication architecture.
+- Changes to Clerk authentication.
+- Changes to Supabase ownership architecture.
+- Changes to RLS unless explicitly required and approved.
+- Unrelated database schema changes.
+- Unrelated refactoring.
+- New dependencies unless clearly necessary and approved.
+
+---
+
+# Agent Proposal
+
+The agent should first inspect the existing implementation and propose:
+
+1. Settings route/page structure.
+2. Existing theme implementation and how Settings should expose it.
+3. Currency preference storage mechanism.
+4. Existing user-owned data tables relevant to export/reset.
+5. Safe export approach.
+6. Safe reset approach and required deletion order.
+7. Existing application version source.
+8. Existing Privacy Policy / Terms of Service routes or pages.
+9. Exact files expected to change.
+10. Risks and verification requirements.
+
+The proposal must be based on the **actual current codebase**, not assumptions.
+
+---
+
+# Recommended Approach
+
+The preferred implementation approach is:
+
+### Settings
+
+Reuse the existing application layout, components, spacing, typography, controls, and styling patterns.
+
+Do not introduce a separate design system.
+
+### Appearance
+
+Connect Settings to the existing dark/light theme mechanism.
+
+### Currency
+
+Create a persisted currency preference using the smallest appropriate mechanism supported by the existing architecture.
+
+Do not integrate the preference into every monetary display yet.
+
+### Export
+
+Reuse existing data-access logic where possible.
+
+Export only authenticated-user-owned application data.
+
+### Reset
+
+Use authenticated user ownership and existing RLS/data-access rules.
+
+Respect foreign-key dependencies and delete data safely.
+
+Require explicit confirmation before executing the destructive operation.
+
+### About
+
+Reuse existing version information and existing legal-page routes where available.
+
+---
+
+# Data Flow / Architecture Pattern
+
+## Settings
+
+```text
+Authenticated User
+        ↓
+Settings Page
+        ↓
+Existing Settings / Preference Mechanism
+        ↓
+Saved User Preference
+```
+
+## Export
+
+```text
+Authenticated User
+        ↓
+Settings → Export Data
+        ↓
+Existing User-Owned Data Access
+        ↓
+RLS / Ownership Protection
+        ↓
+User's Application Data
+        ↓
+Export File
+```
+
+## Reset
+
+```text
+Authenticated User
+        ↓
+Settings → Reset All Data
+        ↓
+Confirmation
+        ↓
+User-Owned Application Data
+        ↓
+Safe Deletion Order
+        ↓
+Data Reset
+```
+
+The reset flow must never target Clerk account deletion.
+
+---
+
+# Security Requirements
+
+The implementation must:
+
+- use the authenticated user's identity;
+- preserve Clerk → Supabase ownership mapping;
+- preserve RLS;
+- never trust a user-provided `clerk_user_id` as the ownership authority;
+- never allow one user to export another user's data;
+- never allow one user to reset another user's data;
+- never expose secrets or authentication credentials through export;
+- require explicit confirmation for destructive reset operations;
+- avoid service-role credentials in client-side code.
+
+---
+
+# Expected Changes
+
+The agent should provide an exact file list after inspection.
+
+Potential changes may include:
+
+- Settings page/component;
+- Settings route;
+- existing theme integration;
+- preference storage;
+- data export utility;
+- reset-data functionality;
+- About section;
+- supporting UI components;
+- tests if an existing testing architecture supports them.
+
+The agent must not assume these files exist.
+
+---
+
+# Risks / Things to Verify
+
+The agent must specifically verify:
+
+### Appearance
+
+- Existing dark/light mode is preserved.
+- Changing the setting still works after navigating away and returning.
+- No duplicate theme system is introduced.
+
+### Currency
+
+- Selected currency is actually persisted.
+- Refreshing the page does not unexpectedly lose the preference.
+- The setting does not falsely imply that all monetary displays already use the selected currency.
+- No unnecessary schema changes are introduced.
+
+### Export
+
+- Export contains only authenticated-user data.
+- Relevant user-owned application data is included.
+- No credentials or secrets are exported.
+- Export works with empty and populated datasets.
+
+### Reset
+
+- Confirmation is required.
+- Canceling confirmation performs no deletion.
+- Reset affects only the authenticated user's application data.
+- Foreign-key dependencies are handled correctly.
+- Clerk authentication remains intact.
+- Other users' data is unaffected.
+- Reset works when some tables contain no records.
+
+### About
+
+- Displayed version matches the actual application version source.
+- Privacy Policy link works if available.
+- Terms of Service link works if available.
+- Missing legal pages are reported rather than invented.
+
+---
+
+# Verification Plan
+
+After implementation, the agent must report the actual checks performed.
+
+## Manual Verification
+
+### Appearance
+
+- Switch dark → light.
+- Switch light → dark.
+- Navigate away and return.
+- Refresh and verify expected persistence.
+
+### Currency
+
+- Select PHP.
+- Select another supported currency.
+- Refresh the page.
+- Verify the selected preference remains saved.
+
+### Export
+
+- Create/use test user-owned data.
+- Export data.
+- Inspect the resulting export.
+- Verify ownership and included data.
+
+### Reset
+
+- Create/use test user-owned data.
+- Trigger Reset All Data.
+- Verify confirmation appears.
+- Cancel and verify data remains.
+- Confirm reset.
+- Verify user application data is removed.
+- Verify Clerk authentication remains active.
+- Verify unrelated users' data is untouched.
+
+### About
+
+- Verify application version.
+- Open Privacy Policy.
+- Open Terms of Service.
+
+### Regression
+
+Verify that existing functionality still works:
+
+- Authentication
+- Dashboard
+- Transactions
+- Categories
+- Reports
+- Reports date range selector
+- Theme behavior
+
+The agent must report only checks that were actually performed.
+
+---
+
+# Documentation Transparency Rule
+
+Any `.md` file created or modified by the agent must be explicitly reported.
+
+For every Markdown file changed, the agent must report:
+
+1. **File changed**
+2. **What changed**
+3. **Why it changed**
+4. **Impact of the change**
+
+The human must review and approve the Markdown changes before they are considered accepted or committed.
+
+This rule applies to **all project `.md` files**, not only:
+
+- `overview.md`
+- `spec.md`
+- `plan.md`
+- `agent.md`
+- `skill.md`
+- `agent-review.md`
+
+---
+
+# Human Decision
+
+## Task 014 Approval
+
+**Status: APPROVED**
+
+- [x] APPROVED
+- [ ] CHANGES REQUESTED
+- [ ] REJECTED
+
+# Implementation Result
+
+**Status: IMPLEMENTED**
+
+### Files created
+
+- `src/lib/settings.js`
+- `src/lib/settings.test.js`
+- `docs/tasks/task-014-settings-page.md`
+
+### Files modified
+
+- `src/App.jsx`
+- `src/pages/SettingsPage.jsx`
+- `agent-review.md`
+
+### What changed
+
+- Added a reusable settings module for theme, currency, export, and reset behaviors.
+- Extended the signed-in Settings page with Appearance, Currency, Data management, and About sections.
+- Added persisted currency selection using the app's existing browser-local storage pattern.
+- Added a JSON export of the current local settings snapshot and a confirmation-gated reset action.
+- Recorded the task result and verification in the project documentation.
+
+### Why each change was made
+
+- The app already had a theme system and Settings page; this task fills the missing user-preference behavior without introducing a new architecture.
+- Currency is persisted with the same local-storage approach as theme to stay consistent with the current app state model.
+- Export and reset are scoped to current browser-local app data only, which matches the project’s current local-only settings architecture and avoids out-of-scope database or auth changes.
+- The About section uses the package version source already present in the project and clearly marks legal pages as not yet available instead of inventing policies.
+
+### Tests/checks performed
+
+- `node --test src/lib/settings.test.js`
+- `npm run lint`
+- `npm run build`
+
+### Manual verification performed
+
+- Verified the settings page renders the additional currency, export, reset, and about sections.
+- Verified the app still loads with the signed-in signed-out boundary intact.
+- Confirmed the project builds successfully after the change.
+
+### Issues discovered
+
+- No blockers were found after implementation.
+- The legal-policy pages remain intentionally absent, so they are documented as not available rather than invented.
+
+### Scope changes
+
+- No scope expansion beyond the approved Task 014 behavior was introduced.
+
+### Documentation changes
+
+- Updated the project review record in `agent-review.md`.
+- Added `docs/tasks/task-014-settings-page.md` to capture the final implementation and validation details.
+
+The agent did not commit or push to GitHub.
+
+---
+
+# Human Acceptance
+
+**Status: ACCEPTED**
+
+- [x] ACCEPTED
+- [ ] CHANGES REQUESTED
+- [ ] NOT ACCEPTED
+
+# Final Instruction
+
+This task has been implemented and verified within the approved scope.
+
+The human reviewer retains final acceptance authority; no further code changes are required for the current task unless new review feedback is provided.
+
+**Task 015 — Reset All Data**
+
+### Status
+
+**APPEROVED**
+
+This task will implement the **Reset All Data** functionality inside the existing SalimSpend Settings page.
+
+The purpose is to allow an authenticated user to permanently remove their own SalimSpend application data while keeping their Clerk account, authentication, and application access intact.
+
+Because this is a destructive operation, the implementation must prioritize ownership, safety, confirmation, and correct deletion behavior.
+
+---
+
+# Agent Instructions
+
+Before making any implementation changes, the agent must:
+
+1. Read `AGENT.md`.
+2. Read `SKILL.md`.
+3. Read `docs/overview.md`.
+4. Read relevant task and architecture documentation.
+5. Read the approved Task 014 documentation/review if available.
+6. Inspect the current Settings page implementation.
+7. Inspect the existing authentication flow.
+8. Inspect the current Supabase client/data-access architecture.
+9. Inspect all application tables that contain user-owned SalimSpend data.
+10. Inspect foreign-key relationships between those tables.
+11. Inspect existing RLS policies.
+12. Determine the correct and safest deletion order.
+13. Identify the exact files and database operations that would be affected.
+14. Propose the implementation approach and risks.
+15. **STOP and wait for explicit human approval.**
+
+The agent must **not implement anything before human approval**.
+
+The existence of this task proposal does not constitute approval.
+
+---
+
+# Proposed Scope
+
+Task 015 will implement a safe **Reset All Data** action in the existing Settings page.
+
+The functionality should:
+
+- provide a clearly destructive Reset All Data action;
+- require explicit user confirmation;
+- identify the authenticated user as the ownership boundary;
+- delete only that user's SalimSpend application data;
+- correctly handle foreign-key dependencies;
+- preserve Clerk authentication;
+- preserve the user's ability to continue using SalimSpend after reset;
+- provide appropriate success/error feedback.
+
+---
+
+# What "Reset All Data" Means
+
+For this task:
+
+> **Reset All Data means removing the authenticated user's application data from SalimSpend.**
+
+It does **not** mean deleting the user's account.
+
+The reset must not delete or modify:
+
+- Clerk account;
+- Clerk authentication credentials;
+- authentication sessions;
+- application source code;
+- database schema;
+- other users' data;
+- global application configuration.
+
+---
+
+# Data Ownership
+
+The authenticated user's Clerk identity remains the ownership boundary.
+
+The existing architecture uses the authenticated Clerk user's identity to associate application records with that user.
+
+The agent must inspect the actual current implementation rather than assuming a particular table or field.
+
+For example, if a table uses:
+
+```text
+clerk_user_id
+```
+
+the deletion must target the authenticated user's value.
+
+The agent must not allow the client to arbitrarily choose another user's identifier.
+
+---
+
+# Database Inspection
+
+Before implementation, the agent must inspect the actual current database/data model.
+
+At minimum, determine:
+
+- all user-owned application tables;
+- ownership columns;
+- RLS policies;
+- foreign keys;
+- dependencies between tables;
+- tables that should be included in reset;
+- tables that must never be deleted.
+
+The agent must not guess the data model.
+
+The current known application areas include data such as:
+
+- transactions;
+- categories;
+- payment methods;
+- user preferences/settings where applicable.
+
+However, the agent must verify the actual current schema before implementation.
+
+---
+
+# Deletion Strategy
+
+The agent should determine the safest deletion strategy based on the existing architecture.
+
+The strategy must account for foreign-key constraints.
+
+If records have relationships such as:
+
+```text
+Transactions
+   ↓
+Category
+```
+
+the agent must ensure deletion occurs in a safe order or use an appropriately designed existing database operation.
+
+The agent must **not introduce `ON DELETE CASCADE` simply to make Reset All Data easier**.
+
+Changing foreign-key behavior is outside the default scope unless explicitly proposed and approved.
+
+---
+
+# RLS and Security
+
+Reset must preserve the existing Clerk → Supabase → RLS ownership model.
+
+The implementation must:
+
+- execute as the authenticated user;
+- respect existing RLS;
+- delete only records belonging to the authenticated user;
+- never bypass ownership checks;
+- never accept an arbitrary user ID from the UI as the authority;
+- never expose another user's data;
+- never use a service-role secret in client-side code.
+
+If the existing RLS policies prevent safe reset functionality, the agent must report the issue and propose the smallest required change before implementation.
+
+---
+
+# Confirmation UX
+
+Reset All Data is destructive and must require explicit confirmation.
+
+The confirmation should clearly communicate that the operation:
+
+- is permanent;
+- removes the user's SalimSpend application data;
+- does not delete their account.
+
+The user must have a clear way to:
+
+- cancel;
+- confirm the reset.
+
+The reset must not happen merely because the user clicked the initial Settings action.
+
+---
+
+# Reset Flow
+
+The expected flow is:
+
+```text
+Settings
+   ↓
+Reset All Data
+   ↓
+Warning / Confirmation
+   ↓
+Cancel ─────────────→ No changes
+   ↓
+Confirm
+   ↓
+Authenticated User
+   ↓
+Delete User-Owned Application Data
+   ↓
+Success / Error Feedback
+```
+
+---
+
+# Post-Reset Behavior
+
+After a successful reset:
+
+- user remains authenticated;
+- user remains on the application;
+- application should return to an appropriate empty/default state;
+- **currently connected data views** should reflect the reset data;
+- Transactions should show an empty state;
+- Reports should reflect no remaining transaction data;
+- Categories/payment methods should reflect the reset behavior according to the actual data model.
+
+### Dashboard Scope Clarification
+
+The Dashboard is **not currently connected to real Supabase transaction data**.
+
+Therefore:
+
+- Dashboard data behavior is **not part of Task 015**.
+- The agent must **not connect or modify the Dashboard data architecture** as part of this task.
+- The agent must not treat the Dashboard's current state as evidence that Reset All Data succeeded or failed.
+- Dashboard integration will be handled as a separate future task.
+
+For Task 015, verification should focus on the database state and the application's **currently connected data views**.
+
+---
+
+# Error Handling
+
+If reset fails:
+
+- do not falsely report success;
+- provide an understandable error state;
+- avoid exposing sensitive database details to the user;
+- preserve remaining data if the operation cannot safely complete;
+- report the underlying technical error in the implementation report.
+
+The agent should consider whether the deletion operation can partially complete and should identify any atomicity concerns.
+
+If a transaction/atomic database operation is required for safe reset, the agent must propose the appropriate approach before implementation.
+
+---
+
+# Success Feedback
+
+After a successful reset, provide clear user feedback that the application data has been reset.
+
+The feedback should not imply:
+
+- that the Clerk account was deleted;
+- that the user was signed out;
+- that other users were affected.
+
+---
+
+# Out of Scope
+
+The following are explicitly outside Task 015:
+
+- connecting Dashboard to real Supabase data;
+- Dashboard redesign;
+- Clerk account deletion;
+- account deactivation;
+- password reset;
+- profile deletion;
+- changing authentication;
+- deleting other users' data;
+- database schema redesign;
+- changing ownership architecture;
+- changing RLS architecture unless explicitly proposed and approved;
+- adding `ON DELETE CASCADE` merely for convenience;
+- deleting global/application configuration;
+- deleting the user's Clerk account;
+- currency integration;
+- currency conversion;
+- Transactions redesign;
+- Reports redesign;
+- new analytics;
+- unrelated refactoring;
+- unrelated dependencies.
+
+---
+
+# Agent Proposal
+
+Before implementation, the agent must provide a concrete proposal covering:
+
+1. Which current tables are included in Reset All Data.
+2. Which tables are excluded and why.
+3. Current ownership mechanism for each included table.
+4. Current RLS behavior.
+5. Foreign-key relationships.
+6. Safe deletion order.
+7. Whether the operation can safely be performed through the existing client/data-access layer.
+8. Whether an atomic database operation is required.
+9. Exact files expected to change.
+10. Any database/RLS changes required.
+11. Risks and mitigation.
+12. Verification approach.
+
+The proposal must be based on the actual codebase and current database architecture.
+
+---
+
+# Recommended Architecture
+
+Prefer reusing existing data-access patterns.
+
+Expected architecture:
+
+```text
+Authenticated User
+        ↓
+Settings Page
+        ↓
+Reset Confirmation
+        ↓
+Existing Data Access Layer
+        ↓
+Supabase
+        ↓
+RLS / Ownership Validation
+        ↓
+Authenticated User's Records
+        ↓
+Safe Deletion
+```
+
+If this architecture is insufficient for safe multi-table deletion, the agent must explain why and propose the smallest appropriate improvement.
+
+---
+
+# Security Requirements
+
+The implementation must guarantee:
+
+### User Isolation
+
+A user can reset only their own application data.
+
+### Authentication
+
+The operation requires an authenticated user.
+
+### Authorization
+
+The authenticated identity determines ownership.
+
+### No Clerk Deletion
+
+Resetting application data must never delete the Clerk account.
+
+### No Cross-User Deletion
+
+A malicious or modified client request must not allow another user's records to be deleted.
+
+### No Secrets
+
+No service-role credentials or privileged secrets may be exposed to the browser.
+
+### Destructive Confirmation
+
+The reset operation must require explicit confirmation.
+
+---
+
+# Expected Changes
+
+The agent should provide the exact file list after inspection.
+
+Potential changes may include:
+
+- Settings component;
+- reset-data handler;
+- data-access utility;
+- confirmation dialog;
+- loading/error/success state;
+- supporting hooks or utilities;
+- database function only if technically required and approved.
+
+The agent must not assume these files exist.
+
+---
+
+# Risks / Things to Verify
+
+The agent must specifically verify:
+
+### Ownership
+
+- Correct authenticated user identity is used.
+- No user-controlled ID is trusted for ownership.
+
+### RLS
+
+- Existing RLS policies correctly isolate records.
+- Reset does not bypass RLS unexpectedly.
+
+### Foreign Keys
+
+- Deletion order respects current FK constraints.
+- Referenced records are handled safely.
+
+### Partial Failure
+
+- Determine what happens if one deletion succeeds and another fails.
+- Avoid leaving the user's data in an unexpected partially reset state where possible.
+
+### Confirmation
+
+- Initial button does not immediately delete.
+- Cancel performs no deletion.
+- Confirm performs the reset.
+
+### Authentication
+
+- Clerk session remains valid after reset.
+- User can continue using the application.
+
+### Connected Application State
+
+After reset, verify the data state of currently connected areas:
+
+- Transactions reflects empty data.
+- Reports reflects empty data.
+- Categories/payment methods behave according to the reset design.
+- Dashboard is **not included in this verification** because its real-data connection is a separate future task.
+
+### Regression
+
+Existing functionality must continue working:
+
+- Authentication
+- Transactions
+- Categories
+- Reports
+- Reports date range selector
+- Settings
+- Export Data
+- Dark/light mode
+
+---
+
+# Verification Plan
+
+The agent must report the actual checks performed.
+
+## Manual Verification
+
+### Confirmation
+
+1. Open Settings.
+2. Click Reset All Data.
+3. Verify confirmation appears.
+4. Cancel.
+5. Verify no data was removed.
+
+### Successful Reset
+
+1. Use a test account with application data.
+2. Trigger Reset All Data.
+3. Confirm the operation.
+4. Verify user-owned application data is removed.
+5. Verify Clerk authentication remains active.
+6. Verify application remains usable.
+
+### Ownership
+
+Verify that the reset affects only the authenticated user's records.
+
+### Foreign Keys
+
+Verify reset works with realistic related records.
+
+### Empty State
+
+Verify reset behavior when some or all user-owned tables contain no records.
+
+### Error Handling
+
+If possible within the existing architecture, verify that a failed operation does not falsely report success.
+
+### Connected Data Views
+
+Verify:
+
+- Transactions shows the expected empty state.
+- Reports reflects the absence of transaction data.
+- Categories/payment methods reflect the expected reset state.
+
+Dashboard is explicitly excluded from this verification because it is not yet connected to real application data.
+
+### Regression
+
+Verify:
+
+- Transactions
+- Categories
+- Reports
+- Settings
+- Export
+- Dark/light mode
+
+The agent must report only checks that were actually performed.
+
+---
+
+# Documentation Transparency Rule
+
+Any `.md` file created or modified by the agent must be explicitly reported.
+
+For every Markdown file changed, the agent must report:
+
+1. **File changed**
+2. **What changed**
+3. **Why it changed**
+4. **Impact of the change**
+
+This applies to **all project `.md` files**.
+
+The human must review and approve Markdown changes before they are considered accepted or committed.
+
+---
+
+# Human Decision
+
+## Task 015 Approval
+
+**Status: APPROVED**
+
+- [x] APPROVED
+- [ ] CHANGES REQUESTED
+- [ ] REJECTED
+
+# Implementation Result
+
+**Status: IMPLEMENTED**
+
+### What Was Implemented
+
+- Added `public.reset_user_data()` as an authenticated invoker-security RPC. It
+  derives ownership from JWT `sub` and deletes transactions before categories
+  and payment methods in one database transaction.
+- Connected the Settings action to the RPC with explicit destructive
+  confirmation, pending state, and success/error feedback. Local preferences
+  reset only after the database reset succeeds; Clerk authentication is kept.
+- Added pgTAP coverage for related-row deletion and preservation of another
+  user's records.
+
+### Files Changed
+
+- `src/App.jsx` - invoke the authenticated reset RPC and manage result state.
+- `src/pages/SettingsPage.jsx` - confirm progress and operation feedback.
+- `supabase/migrations/20260927_000001_reset_user_data.sql` - define the
+  ownership-scoped atomic reset operation.
+- `supabase/tests/reset_user_data.test.sql` - verify deletion and isolation.
+- `supabase/tests/README.md` - list the new SQL test.
+- `docs/tasks/task-015-reset-all-data.md` - record scope and implementation.
+- `agent-review.md` - record the implementation result.
+
+### Verification
+
+- `npm run lint` passed.
+- `npm run build` passed with a Vite chunk-size advisory.
+- The Supabase CLI is unavailable, so the SQL test and live database/UI flows
+  were not run.
+
+### Remaining Concerns
+
+- Apply the migration and run `supabase test db` in a configured local Supabase
+  environment before relying on the reset in production.
+- Verify confirmation cancellation, successful reset, Clerk session retention,
+  and refreshed connected data views with a configured test account.
+
+The agent must not commit or push to GitHub.
+
+---
+
+# Human Acceptance
+
+**Status: ACCEPTED**
+
+- [x] ACCEPTED
+- [ ] CHANGES REQUESTED
+- [ ] NOT ACCEPTED
+
+# Final Instruction
+
+**STOP AT HUMAN REVIEW.**
+
+This document is a task proposal only.
+
+The agent must not implement Task 015 until the human explicitly changes the Human Decision to:
+
+**APPROVED**
+
+After approval, the human will separately instruct the agent to implement the task.
+
+The agent must not interpret the existence of this document, task number, or proposal as implementation approval.
+
+# Task 016 — Currency Integration
+
+## Status
+
+**IMPLEMENTED**
+
+## Goal
+
+Integrate the currency preference already established in the Settings page into SalimSpend's existing monetary displays.
+
+The selected currency should control how monetary values are formatted and displayed throughout the existing application without changing the underlying transaction amounts.
+
+---
+
+## Current Context
+
+Task 014 established the Settings page and currency preference.
+
+Task 015 implemented Reset All Data.
+
+The Dashboard is currently **not connected to live Supabase transaction data** and remains a separate future task.
+
+Task 016 should build on the existing Settings currency implementation rather than creating a new settings architecture.
+
+---
+
+## Scope
+
+### 1. Inspect Existing Currency Implementation
+
+Before making changes, inspect:
+
+- Current Settings currency implementation
+- How the selected currency is stored
+- Existing default currency
+- Existing monetary formatting logic
+- Existing transaction and report monetary displays
+- Any shared utilities/components already used for currency formatting
+
+Do not assume how Task 014 implemented currency persistence.
+
+---
+
+### 2. Currency Formatting
+
+Use the selected currency consistently when displaying monetary values.
+
+The implementation should properly handle:
+
+- Currency symbol
+- Currency code where appropriate
+- Decimal places
+- Thousands separators
+- Positive values
+- Negative values
+- Income values
+- Expense values
+
+Prefer the existing project utilities if appropriate.
+
+If a new formatter is required, prefer the native JavaScript `Intl.NumberFormat` API rather than adding an unnecessary dependency.
+
+---
+
+### 3. Transactions
+
+Update existing monetary displays on the Transactions page so they use the selected currency.
+
+The underlying transaction amount stored in Supabase must remain unchanged.
+
+Example:
+
+```text
+Stored amount: 1500
+
+PHP → ₱1,500.00
+USD → $1,500.00
+EUR → €1,500.00
+```
+
+This is display formatting only.
+
+---
+
+### 4. Reports
+
+Update existing monetary displays on the Reports page to use the selected currency.
+
+Existing report calculations must remain unchanged.
+
+Only the presentation of monetary values should change.
+
+---
+
+### 5. Dashboard
+
+The Dashboard is currently not connected to live Supabase transaction data.
+
+Do **not** connect the Dashboard to Supabase as part of Task 016.
+
+If the existing Dashboard monetary displays can safely consume the shared currency formatter without changing its data architecture, they may be updated.
+
+Otherwise, leave the Dashboard data architecture unchanged and document the limitation for Task 017+.
+
+---
+
+### 6. Persistence
+
+Changing the currency in Settings should continue using the persistence mechanism established by Task 014.
+
+Verify that the selected currency remains after:
+
+- Page refresh
+- Reopening the application
+- Navigating between pages
+
+---
+
+## Currency Conversion Boundary
+
+Task 016 is **NOT** a currency conversion feature.
+
+Do not implement:
+
+- Live exchange rates
+- Currency conversion
+- PHP → USD conversion
+- USD → EUR conversion
+- Historical exchange rates
+- Multi-currency transaction handling
+- Currency conversion APIs
+
+Changing the selected currency only changes how the existing numeric amount is displayed.
+
+For example:
+
+```text
+Database amount: 1000
+
+Selected currency: USD
+
+Displayed:
+$1,000.00
+```
+
+The database value must remain:
+
+```text
+1000
+```
+
+---
+
+## Database Scope
+
+Do not modify the existing transaction schema merely to support currency display.
+
+Do not add a currency column to transactions unless inspection of the existing architecture reveals a previously established requirement.
+
+Task 016 should primarily remain a currency preference and presentation-integration task.
+
+Do not modify:
+
+- Supabase RLS
+- Clerk authentication
+- Transaction ownership
+- Transaction CRUD architecture
+- Reset All Data database function
+
+---
+
+## Reset All Data Compatibility
+
+Task 016 must preserve the existing Task 015 Reset All Data behavior.
+
+Changing currency must not interfere with:
+
+- Reset All Data
+- Clerk authentication/session
+- Transaction deletion
+- Category deletion
+- Payment method deletion
+
+---
+
+## Out of Scope
+
+The following are explicitly outside Task 016:
+
+- Dashboard Supabase connection
+- Dashboard redesign
+- Currency conversion
+- Exchange-rate APIs
+- Multi-currency transactions
+- Historical currency conversion
+- Transaction schema redesign
+- Transaction CRUD changes
+- Reports calculation redesign
+- Categories architecture changes
+- Reset All Data changes
+- Clerk authentication changes
+- Supabase RLS changes
+- Unrelated UI redesign
+- Unnecessary dependencies
+- Unrelated refactoring
+
+---
+
+## Verification
+
+The implementation should be verified with the following cases:
+
+### Currency Selection
+
+- Select PHP and verify monetary displays.
+- Select USD and verify monetary displays.
+- Select EUR and verify monetary displays.
+- Verify the selected currency persists after refresh.
+- Verify the selected currency persists while navigating between pages.
+
+### Transactions
+
+- Existing transaction amounts display using the selected currency.
+- Adding a transaction still works.
+- Editing a transaction still works.
+- Deleting a transaction still works.
+- Stored numeric amounts remain unchanged.
+
+### Reports
+
+- Existing calculations remain unchanged.
+- Monetary values use the selected currency.
+- Date-range filtering continues to work.
+
+### Settings
+
+- Currency selection still works.
+- Dark/light mode still works.
+- Reset All Data still works.
+
+### Dashboard
+
+- Do not introduce a new Dashboard data connection.
+- Do not alter the Dashboard data architecture.
+
+### Build Checks
+
+Run:
+
+```bash
+npm run lint
+npm run build
+```
+
+Report the results.
+
+---
+
+## Implementation Review Requirements
+
+Before implementation, the agent must:
+
+1. Read `AGENT.md`.
+2. Read `SKILL.md`.
+3. Read `docs/overview.md`.
+4. Review the relevant Task 014 documentation.
+5. Inspect the current Settings currency implementation.
+6. Inspect the current monetary displays.
+7. Identify the exact files that need modification.
+8. Explain the proposed implementation approach.
+9. Identify potential risks or compatibility concerns.
+10. Confirm that the scope does not require Dashboard database integration.
+11. STOP and wait for explicit human approval.
+
+The existence of this proposal does **not** authorize implementation.
+
+Implementation may begin only after the Human Decision is explicitly changed to:
+
+**APPROVED**
+
+---
+
+## Implementation Result
+
+**Status:** IMPLEMENTED
+
+### What Was Implemented
+
+- Added a shared `Intl.NumberFormat` utility that formats using the selected
+  currency and its standard fraction digits.
+- Passed the persisted currency preference to Dashboard, Transactions, and
+  Reports. Dashboard data remains static and no Supabase connection was added.
+- Updated transaction and report monetary displays, including report insight
+  amounts, while retaining numeric transaction values and report calculations.
+- Left currency persistence, transaction CRUD, database schema, authentication,
+  and Reset All Data behavior unchanged.
+
+### Files Changed
+
+- `src/App.jsx`
+- `src/pages/Dashboard.jsx`
+- `src/pages/TransactionsPage.jsx`
+- `src/pages/ReportsPage.jsx`
+- `src/lib/currency.js`
+- `src/lib/currency.test.js`
+- `src/lib/reports.js`
+- `src/lib/reports.test.js`
+- `docs/tasks/task-016-currency-integration.md`
+- `agent-review.md`
+
+### Verification
+
+- `node --test src/lib/currency.test.js src/lib/reports.test.js src/lib/settings.test.js` passed (9 tests).
+- `npm run lint` passed.
+- `npm run build` passed with a Vite large-chunk advisory.
+- Live authenticated UI, persistence-after-refresh, and CRUD verification were
+  not performed.
+
+### Human Review
+
+Implementation is complete. Human acceptance remains pending.
+
+## Documentation Transparency
+
+If the agent creates or modifies any `.md` file, it must report:
+
+- Which Markdown file was changed
+- What was changed
+- Why it was changed
+- The impact of the change
+
+Human review and approval remain required before documentation changes are accepted.
+
+---
+
+## Git / Commit Policy
+
+The agent must not:
+
+- Commit changes
+- Push changes to GitHub
+- Modify Git history
+
+The human will review the implementation and handle the final commit/push.
+
+---
+
+# Human Acceptance
+
+**Status: APPROVED**
+
+- [x] APPROVED
+- [ ] CHANGES REQUESTED
+- [ ] NOT APPROVED
+
+## Final Instruction
+
+**STOP AT HUMAN REVIEW.**
+
+This document is a task proposal only.
+
+The agent must not implement Task 016 until the human explicitly changes the Human Decision to:
+
+**APPROVED**
+
+After approval, the human will separately instruct the agent to implement the task.
+
+The agent must not interpret the existence of this document, task number, or proposal as implementation approval.

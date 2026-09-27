@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { calculateReportMetrics } from "./reports.js";
+import { calculateReportMetrics, formatReportInsight } from "./reports.js";
 
 const now = new Date();
 const currentMonth = new Date(now.getFullYear(), now.getMonth(), 5);
@@ -96,4 +96,15 @@ test("calculateReportMetrics filters by the selected report period", () => {
   assert.equal(weekMetrics.summary.totalExpenses, 400);
   assert.equal(yearMetrics.summary.totalIncome, 1200);
   assert.equal(yearMetrics.summary.totalExpenses, 1470);
+});
+
+test("formats report insight amounts with the selected currency", () => {
+  assert.equal(
+    formatReportInsight({ type: "positive-cash-flow", amount: 1500 }, "USD"),
+    "Net cash flow is positive at +$1,500.00 for this period.",
+  );
+  assert.equal(
+    formatReportInsight({ type: "negative-cash-flow", amount: -1500 }, "EUR"),
+    "You are currently below your income by -€1,500.00 for this period.",
+  );
 });

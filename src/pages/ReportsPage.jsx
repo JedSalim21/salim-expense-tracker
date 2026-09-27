@@ -17,6 +17,7 @@ import { createSupabaseClient } from "../lib/supabase";
 import {
   calculateReportMetrics,
   formatCurrency,
+  formatReportInsight,
   formatSignedCurrency,
 } from "../lib/reports";
 
@@ -40,7 +41,7 @@ const toneClasses = {
   rose: "text-[#b86c83]",
 };
 
-export default function ReportsPage({ currentView, onSelectView }) {
+export default function ReportsPage({ currentView, onSelectView, currency }) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const supabase = useMemo(() => {
@@ -142,7 +143,7 @@ export default function ReportsPage({ currentView, onSelectView }) {
       label: "Net cash flow",
       value:
         isLoading ? "—" : (
-          formatSignedCurrency(reportMetrics.summary.netCashFlow)
+          formatSignedCurrency(reportMetrics.summary.netCashFlow, currency)
         ),
       trend: reportMetrics.summary.netCashFlow >= 0 ? "Healthy" : "Tight",
       icon: FiArrowUpRight,
@@ -151,7 +152,9 @@ export default function ReportsPage({ currentView, onSelectView }) {
     {
       label: "Income",
       value:
-        isLoading ? "—" : formatCurrency(reportMetrics.summary.totalIncome),
+        isLoading ? "—" : (
+          formatCurrency(reportMetrics.summary.totalIncome, currency)
+        ),
       trend: selectedPeriodLabel,
       icon: FiTrendingUp,
       tone: "blue",
@@ -159,7 +162,9 @@ export default function ReportsPage({ currentView, onSelectView }) {
     {
       label: "Expenses",
       value:
-        isLoading ? "—" : formatCurrency(reportMetrics.summary.totalExpenses),
+        isLoading ? "—" : (
+          formatCurrency(reportMetrics.summary.totalExpenses, currency)
+        ),
       trend: selectedPeriodLabel,
       icon: FiTrendingDown,
       tone: "amber",
@@ -180,7 +185,7 @@ export default function ReportsPage({ currentView, onSelectView }) {
   const recentInsights =
     reportMetrics.insights.length > 0 ?
       reportMetrics.insights
-    : ["Add transactions to start building your spending report."];
+    : [{ type: "empty" }];
 
   const maxMonthlyValue =
     Math.max(...monthlyTrend.map((entry) => Number(entry.value) || 0), 0) || 1;
@@ -383,7 +388,7 @@ export default function ReportsPage({ currentView, onSelectView }) {
                       ></span>
                     </div>
                     <div className="text-right text-[10px] font-bold text-[var(--text-secondary)]">
-                      {item.formattedAmount}
+                      {formatCurrency(item.amount, currency)}
                     </div>
                   </div>
                 ))}
@@ -420,7 +425,7 @@ export default function ReportsPage({ currentView, onSelectView }) {
                         {item.name}
                       </div>
                       <div className="mt-1 text-[10px] text-[var(--text-muted)]">
-                        {item.amount}
+                        {formatCurrency(item.amount, currency)}
                       </div>
                     </div>
                     <span className="text-[10px] font-extrabold text-[var(--brand)]">
@@ -449,10 +454,13 @@ export default function ReportsPage({ currentView, onSelectView }) {
             </div>
 
             <ul className="mt-4 space-y-3 text-sm text-[var(--text-secondary)]">
-              {recentInsights.map((insight) => (
-                <li className="flex gap-3" key={insight}>
+              {recentInsights.map((insight, index) => (
+                <li
+                  className="flex gap-3"
+                  key={`${insight.type ?? "insight"}-${index}`}
+                >
                   <span className="mt-1.5 inline-block h-[7px] w-[7px] shrink-0 rounded-full bg-[var(--brand)]"></span>
-                  <span>{insight}</span>
+                  <span>{formatReportInsight(insight, currency)}</span>
                 </li>
               ))}
             </ul>
