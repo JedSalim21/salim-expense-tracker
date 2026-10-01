@@ -17,6 +17,10 @@
   --brand-strong: #115e59;
   --brand-soft: #dfeae4;
   --sidebar-active: #dfeae4;
+  --danger: #b42318;
+  --danger-soft: #fef2f2;
+  --danger-border: #fecaca;
+  --danger-hover: #fee2e2;
   --chip-bg: #f1f8f5;
   --card-shadow: 0 6px 16px rgba(36, 56, 53, 0.03);
   color: #6b6375;
@@ -43,6 +47,10 @@ html[data-theme="dark"] {
   --brand-strong: #a8e4d8;
   --brand-soft: rgba(127, 212, 195, 0.15);
   --sidebar-active: rgba(127, 212, 195, 0.15);
+  --danger: #fca5a5;
+  --danger-soft: rgba(127, 29, 29, 0.24);
+  --danger-border: rgba(248, 113, 113, 0.5);
+  --danger-hover: rgba(127, 29, 29, 0.4);
   --chip-bg: rgba(127, 212, 195, 0.09);
   --card-shadow: 0 10px 22px rgba(7, 13, 18, 0.26);
 }
@@ -70,7 +78,7 @@ a {
 }
 
 #root {
-  width: 1126px;
+  width: min(100%, 1126px);
   max-width: 100%;
   min-height: 100svh;
   margin: 0 auto;

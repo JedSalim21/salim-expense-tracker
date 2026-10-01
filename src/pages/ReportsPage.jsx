@@ -28,7 +28,7 @@ const emptyReportMetrics = {
     netCashFlow: 0,
     savingsRate: 0,
   },
-  spendingBreakdown: [],
+  categoryBreakdown: [],
   monthlyTrend: [],
   topCategories: [],
   insights: [],
@@ -41,7 +41,12 @@ const toneClasses = {
   rose: "text-[#b86c83]",
 };
 
-export default function ReportsPage({ currentView, onSelectView, currency }) {
+export default function ReportsPage({
+  currentView,
+  onSelectView,
+  currency,
+  transactionsRevision,
+}) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const supabase = useMemo(() => {
@@ -136,7 +141,14 @@ export default function ReportsPage({ currentView, onSelectView, currency }) {
     return () => {
       isActive = false;
     };
-  }, [isLoaded, isSignedIn, supabase, user?.id, selectedPeriod]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    supabase,
+    user?.id,
+    selectedPeriod,
+    transactionsRevision,
+  ]);
 
   const summaryData = [
     {
@@ -180,7 +192,7 @@ export default function ReportsPage({ currentView, onSelectView, currency }) {
   ];
 
   const monthlyTrend = reportMetrics.monthlyTrend;
-  const spendingBreakdown = reportMetrics.spendingBreakdown;
+  const categoryBreakdown = reportMetrics.categoryBreakdown;
   const topCategories = reportMetrics.topCategories;
   const recentInsights =
     reportMetrics.insights.length > 0 ?
@@ -192,7 +204,7 @@ export default function ReportsPage({ currentView, onSelectView, currency }) {
 
   return (
     <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
+      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block max-[680px]:pb-[72px]"
       aria-label="SalimSpend reports"
     >
       <SidebarNav
@@ -357,22 +369,22 @@ export default function ReportsPage({ currentView, onSelectView, currency }) {
               <FiPieChart aria-hidden="true" className="text-[var(--brand)]" />
             </div>
 
-            {spendingBreakdown.length === 0 ?
+            {categoryBreakdown.length === 0 ?
               <div className="mt-5 text-sm text-[var(--text-secondary)]">
                 {isLoading ?
                   "Loading category totals..."
-                : "No expense breakdown available yet."}
+                : "No category activity available yet."}
               </div>
             : <div className="mt-5 grid gap-3">
-                {spendingBreakdown.map((item) => (
-                  <div className="grid gap-1.5" key={item.label}>
+                {categoryBreakdown.map((item) => (
+                  <div className="grid gap-1.5" key={item.id}>
                     <div className="flex items-center justify-between gap-3 text-[11px] text-[var(--text-secondary)]">
                       <span className="inline-flex items-center gap-[7px]">
                         <i
                           className="inline-block h-[7px] w-[7px] rounded-full"
                           style={{ backgroundColor: item.color }}
                         ></i>
-                        {item.label}
+                        {item.label} · {item.type}
                       </span>
                       <span className="font-bold text-[var(--text-heading)]">
                         {item.percent.toFixed(0)}%
@@ -405,7 +417,7 @@ export default function ReportsPage({ currentView, onSelectView, currency }) {
                   Top categories
                 </p>
                 <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
-                  Biggest spend areas
+                  Largest category activity
                 </h2>
               </div>
             </div>
@@ -418,11 +430,11 @@ export default function ReportsPage({ currentView, onSelectView, currency }) {
                 {topCategories.map((item) => (
                   <div
                     className="flex items-center justify-between gap-3 rounded-[6px] border border-[var(--border)] bg-[var(--panel-soft)] px-3 py-2.5"
-                    key={item.name}
+                    key={`${item.type}-${item.name}`}
                   >
                     <div>
                       <div className="text-[12px] font-bold text-[var(--text-heading)]">
-                        {item.name}
+                        {item.name} · {item.type}
                       </div>
                       <div className="mt-1 text-[10px] text-[var(--text-muted)]">
                         {formatCurrency(item.amount, currency)}

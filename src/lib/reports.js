@@ -150,38 +150,45 @@ function buildMonthlyTrend(transactions, asOfDate = new Date(), months = 6) {
   return orderedEntries;
 }
 
-function buildSpendingBreakdown(transactions, categories) {
+function buildCategoryBreakdown(transactions, categories) {
   const categoryMap = new Map(
     (categories ?? []).map((category) => [category.id, category]),
   );
   const totals = new Map();
 
   for (const transaction of transactions) {
-    if (transaction.type !== "expense") {
+    if (!["income", "expense"].includes(transaction.type)) {
       continue;
     }
 
     const categoryId = transaction.category_id;
-    const currentValue = totals.get(categoryId) || 0;
-    totals.set(categoryId, currentValue + (Number(transaction.amount) || 0));
+    const key = `${transaction.type}:${categoryId}`;
+    const currentValue = totals.get(key) || { amount: 0 };
+    totals.set(key, {
+      categoryId,
+      type: transaction.type,
+      amount: currentValue.amount + (Number(transaction.amount) || 0),
+    });
   }
 
-  const expenseTotal = Array.from(totals.values()).reduce(
-    (sum, amount) => sum + amount,
-    0,
-  );
+  const typeTotals = new Map();
+  for (const { type, amount } of totals.values()) {
+    typeTotals.set(type, (typeTotals.get(type) || 0) + amount);
+  }
 
   const entries = Array.from(totals.entries())
-    .map(([categoryId, amount]) => {
+    .map(([key, { categoryId, type, amount }]) => {
       const category = categoryMap.get(categoryId) ?? {
         name: "Others",
         color: defaultCategoryPalette[0],
       };
-      const percent = expenseTotal > 0 ? (amount / expenseTotal) * 100 : 0;
+      const typeTotal = typeTotals.get(type) || 0;
+      const percent = typeTotal > 0 ? (amount / typeTotal) * 100 : 0;
 
       return {
-        id: categoryId,
+        id: key,
         label: category.name || "Others",
+        type,
         amount,
         percent,
         color: category.color || defaultCategoryPalette[0],
@@ -189,10 +196,7 @@ function buildSpendingBreakdown(transactions, categories) {
     })
     .sort((left, right) => right.amount - left.amount);
 
-  return {
-    entries,
-    total: expenseTotal,
-  };
+  return entries;
 }
 
 export function calculateReportMetrics(
@@ -231,15 +235,17 @@ export function calculateReportMetrics(
   const netCashFlow = incomeTotal - expenseTotal;
   const savingsRate = incomeTotal > 0 ? (netCashFlow / incomeTotal) * 100 : 0;
 
-  const spending = buildSpendingBreakdown(periodTransactions, categories);
-  const breakdown = spending.entries.map((item) => ({
-    ...item,
-    amount: Number(item.amount) || 0,
-    percent: Number(item.percent) || 0,
-  }));
+  const breakdown = buildCategoryBreakdown(periodTransactions, categories).map(
+    (item) => ({
+      ...item,
+      amount: Number(item.amount) || 0,
+      percent: Number(item.percent) || 0,
+    }),
+  );
 
   const topCategories = breakdown.slice(0, 4).map((item) => ({
     name: item.label,
+    type: item.type,
     amount: item.amount,
     percent: item.percent,
     color: item.color,
@@ -247,12 +253,25 @@ export function calculateReportMetrics(
   }));
 
   const insights = [];
-  if (breakdown.length > 0) {
-    const strongestCategory = breakdown[0];
+  const strongestExpenseCategory = breakdown.find(
+    (item) => item.type === "expense",
+  );
+  if (strongestExpenseCategory) {
     insights.push({
       type: "top-category",
-      category: strongestCategory.label,
-      percent: strongestCategory.percent,
+      category: strongestExpenseCategory.label,
+      percent: strongestExpenseCategory.percent,
+    });
+  }
+
+  const strongestIncomeCategory = breakdown.find(
+    (item) => item.type === "income",
+  );
+  if (strongestIncomeCategory) {
+    insights.push({
+      type: "top-income-category",
+      category: strongestIncomeCategory.label,
+      percent: strongestIncomeCategory.percent,
     });
   }
 
@@ -275,7 +294,7 @@ export function calculateReportMetrics(
       netCashFlow,
       savingsRate: Number(savingsRate.toFixed(2)),
     },
-    spendingBreakdown: breakdown,
+    categoryBreakdown: breakdown,
     monthlyTrend: buildMonthlyTrend(periodTransactions, referenceDate, 6),
     topCategories,
     insights,
@@ -294,6 +313,8 @@ export function formatReportInsight(insight, currency) {
   switch (insight.type) {
     case "top-category":
       return `${insight.category} is your biggest spend area, accounting for ${insight.percent.toFixed(1)}% of expenses.`;
+    case "top-income-category":
+      return `${insight.category} is your largest income category, accounting for ${insight.percent.toFixed(1)}% of income.`;
     case "positive-cash-flow":
       return `Net cash flow is positive at ${formatSignedCurrencyValue(insight.amount, currency)} for this period.`;
     case "negative-cash-flow":

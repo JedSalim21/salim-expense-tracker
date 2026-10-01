@@ -208,8 +208,6 @@ Do not mark human acceptance as `ACCEPTED`.
 
 Only the human can make the final acceptance decision.
 
----
-
 # 10. Reporting Changes
 
 After implementation, report:

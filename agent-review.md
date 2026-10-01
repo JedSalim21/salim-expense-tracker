@@ -6024,3 +6024,491 @@ The agent must not implement Task 016 until the human explicitly changes the Hum
 After approval, the human will separately instruct the agent to implement the task.
 
 The agent must not interpret the existence of this document, task number, or proposal as implementation approval.
+
+# Task 017 — Confirmation Modal & Mobile Responsiveness
+
+## Status
+
+**APPROVED**
+
+## Goal
+
+Improve SalimSpend's confirmation flow and mobile responsiveness across the existing application.
+
+The application should use a reusable in-app confirmation modal instead of browser-native `window.confirm()` dialogs, while all five main pages should remain usable on mobile devices without unwanted horizontal page scrolling.
+
+The implementation must preserve the existing application architecture, functionality, authentication, Supabase ownership rules, and desktop layout.
+
+---
+
+## Current Context
+
+SalimSpend currently has confirmation actions that use the browser's native `window.confirm()` dialog.
+
+Examples include:
+
+- Deleting a transaction
+- Deleting a category
+- Resetting user data
+
+These browser-native dialogs do not match the application's UI and provide a less consistent experience, especially on mobile.
+
+SalimSpend also has responsive layout issues that can cause unwanted horizontal scrolling on smaller screens.
+
+The Transactions page currently contains a deliberately wide data layout that can exceed the mobile viewport.
+
+The application already has responsive behavior in several areas, including the mobile navigation.
+
+The mobile navigation's horizontal scrolling is intentional and should not be treated as the same problem as unwanted horizontal page scrolling.
+
+### Important Dashboard Context
+
+The Dashboard page is **not yet connected to the real Supabase database**.
+
+Therefore, this task must **not** implement Dashboard database integration.
+
+The Dashboard may be adjusted for responsive layout only.
+
+Its current mock/static data behavior must remain unchanged.
+
+Dashboard database integration will be handled by a separate future task.
+
+---
+
+## Scope
+
+### 1. Reusable Confirmation Modal
+
+Create a reusable in-app confirmation modal that can replace browser-native confirmation dialogs.
+
+The modal should:
+
+- Match the existing SalimSpend visual style
+- Support dark and light themes
+- Work correctly on mobile and desktop
+- Clearly communicate the action being confirmed
+- Provide a cancel action
+- Provide a confirm/destructive action
+- Prevent accidental confirmation
+- Be reusable by multiple pages
+- Avoid duplicating modal implementations across pages
+
+The reusable implementation should be placed in an appropriate shared component/module location based on the existing project structure.
+
+---
+
+## Confirmation Actions
+
+Replace applicable `window.confirm()` usage with the reusable confirmation modal.
+
+Known confirmation actions include:
+
+### Transactions
+
+- Delete transaction
+
+### Categories
+
+- Delete category
+
+### Settings
+
+- Reset all user data
+
+### Other Pages
+
+Inspect:
+
+- Dashboard
+- Transactions
+- Categories
+- Reports
+- Settings
+
+for any additional actions that require user confirmation.
+
+Do not add confirmation dialogs to actions that do not reasonably require confirmation.
+
+---
+
+## Confirmation Modal Behavior
+
+The modal should have a clear structure similar to:
+
+- Title
+- Short explanation/message
+- Cancel button
+- Confirm button
+
+For destructive actions, the confirm button should clearly communicate the action.
+
+Examples:
+
+- Delete
+- Reset data
+
+The modal should not rely on browser-native confirmation UI.
+
+The implementation should allow each caller to provide appropriate text instead of hardcoding page-specific wording inside the reusable component.
+
+---
+
+## 2. Mobile Responsiveness
+
+Review all five main application pages:
+
+- Dashboard
+- Transactions
+- Categories
+- Reports
+- Settings
+
+The goal is to ensure the main application content works correctly on mobile viewport sizes.
+
+### Required behavior
+
+On mobile:
+
+- No unwanted horizontal page scrolling
+- Content fits within the viewport
+- Cards stack or resize appropriately
+- Sections adapt to smaller widths
+- Buttons remain usable and tappable
+- Forms fit the viewport
+- Text does not unnecessarily force containers wider
+- Action controls remain accessible
+- Tables/data-heavy sections use an appropriate mobile layout
+- Spacing remains visually usable
+- Modals fit within the viewport
+- Long content should wrap or adapt where appropriate
+
+Desktop layouts should remain functional and visually consistent.
+
+---
+
+## Transactions Page
+
+The Transactions page currently contains a deliberately wide data layout.
+
+Do not simply hide the overflow.
+
+Instead, determine an appropriate responsive strategy for the transaction data on smaller screens.
+
+Possible approaches may include:
+
+- Responsive stacking
+- Card-based mobile representation
+- Selective hiding/reorganization of secondary information
+- Responsive action layout
+- Horizontal scrolling only for a specific data component if genuinely necessary
+
+The chosen implementation should be based on the existing UI and preserve access to all important transaction information.
+
+The overall page itself should not become horizontally scrollable because of the transaction layout.
+
+---
+
+## Dashboard
+
+The Dashboard should be reviewed for mobile responsiveness.
+
+However:
+
+**Do not connect the Dashboard to Supabase in this task.**
+
+Do not:
+
+- Add Supabase queries to Dashboard
+- Replace existing mock/static Dashboard data
+- Change Dashboard database architecture
+- Add transaction-fetching logic
+- Modify Dashboard data ownership behavior
+
+Only make responsive UI/layout improvements that are necessary for this task.
+
+---
+
+## Categories
+
+Review the Categories page for:
+
+- Card sizing
+- Button layout
+- Text wrapping
+- Action controls
+- Modal compatibility
+- Mobile spacing
+- Horizontal overflow
+
+The existing category functionality must continue to work.
+
+Category deletion must continue respecting the existing transaction/category relationship behavior.
+
+Do not introduce unsafe deletion behavior.
+
+---
+
+## Reports
+
+Review the Reports page for:
+
+- Responsive summary cards
+- Charts/report sections
+- Filter controls
+- Date-range selector
+- Currency display
+- Text wrapping
+- Mobile spacing
+- Horizontal overflow
+
+Existing Reports functionality and Supabase integration must remain intact.
+
+Do not redesign the Reports page unnecessarily.
+
+---
+
+## Settings
+
+Review the Settings page for:
+
+- Theme controls
+- Currency controls
+- Data Management section
+- Export action
+- Reset action
+- About section
+- Confirmation modal behavior
+- Mobile layout
+- Button sizing
+- Text wrapping
+
+The existing Settings functionality must remain intact.
+
+Reset data must continue to require explicit confirmation.
+
+---
+
+## Sidebar Navigation
+
+The existing mobile SidebarNav uses horizontal scrolling for navigation.
+
+This behavior is intentional.
+
+Do **not** remove the mobile navigation's horizontal scrolling simply because the application should not have unwanted horizontal page scrolling.
+
+The requirement applies to the main application content and page layout.
+
+The navigation may remain horizontally scrollable if that is the existing intended mobile interaction.
+
+---
+
+## Architecture Requirements
+
+Follow the existing SalimSpend architecture.
+
+Before implementation, inspect:
+
+- `AGENT.md`
+- `SKILL.md`
+- `docs/overview.md`
+- `docs/spec.md`
+- `docs/plan.md`
+- Relevant task documentation
+- Existing shared components
+- Existing page structure
+- Existing theme implementation
+- Existing Settings implementation
+- Existing Supabase usage
+- Existing authentication boundaries
+
+Do not assume file paths if they differ from the repository.
+
+Use the existing project conventions where possible.
+
+Do not introduce a new architecture when the existing application already provides an appropriate pattern.
+
+---
+
+## Authentication & Data Safety
+
+This task must preserve the existing authentication and data ownership model.
+
+Do not weaken or bypass:
+
+- Clerk authentication
+- Supabase authentication
+- Row Level Security
+- `clerk_user_id` ownership
+- Existing user-data isolation
+
+The confirmation modal is a UI change and must not change authorization behavior.
+
+For destructive actions:
+
+- Continue using the authenticated user's existing ownership flow
+- Never trust a user-provided `clerk_user_id`
+- Never expose another user's data
+- Never introduce a service-role key into client-side code
+
+---
+
+## Data Integrity
+
+Do not change the underlying transaction amounts, category relationships, payment methods, or existing database schema unless absolutely required for the responsive/confirmation implementation.
+
+Do not introduce database migrations unless the implementation genuinely requires one.
+
+Do not change Dashboard data behavior because Dashboard database integration is outside this task.
+
+---
+
+## Out of Scope
+
+The following are explicitly outside the scope of Task 017:
+
+- Connecting Dashboard to Supabase
+- Replacing Dashboard mock/static data with database data
+- Dashboard transaction queries
+- Dashboard database architecture
+- New Dashboard analytics
+- New Reports functionality
+- New transaction functionality
+- New category functionality
+- New Settings functionality
+- Currency architecture changes
+- Changing the underlying transaction amount storage
+- Authentication redesign
+- Supabase RLS redesign
+- Database schema redesign
+- Payment/subscription/billing functionality
+- Major visual redesign of SalimSpend
+
+This task is focused on:
+
+**Confirmation UX + mobile responsiveness.**
+
+---
+
+## Implementation Requirements
+
+### Phase 1 — Inspect
+
+Before changing code:
+
+1. Read the required project documentation.
+2. Inspect the existing shared component structure.
+3. Inspect confirmation-related code.
+4. Search for all `window.confirm()` usage.
+5. Inspect all five main pages for mobile layout issues.
+6. Identify the actual source of horizontal overflow instead of masking it.
+7. Identify reusable components that can be extended rather than duplicated.
+
+---
+
+### Phase 2 — Plan
+
+Before implementation, identify:
+
+- Which files need to change
+- Which new shared component(s) are needed
+- Which pages require confirmation modal integration
+- Which responsive layouts require changes
+- How Transactions will behave on mobile
+- How the modal will communicate state between parent pages and the reusable component
+
+The plan should avoid unnecessary file changes.
+
+---
+
+### Phase 3 — Implement
+
+Implement:
+
+1. Reusable confirmation modal
+2. Replacement of applicable `window.confirm()` calls
+3. Mobile-responsive improvements across the five main pages
+4. Responsive Transactions data presentation
+5. Responsive confirmation modal behavior
+6. Responsive Dashboard UI only, without database integration
+
+Preserve all existing functionality outside the defined scope.
+
+---
+
+### Regression Checks
+
+Run the appropriate project checks, including:
+
+- `npm run lint`
+- `npm run build`
+
+Run relevant existing tests if available.
+
+Manually verify the affected pages after implementation.
+
+---
+
+## Documentation Requirements
+
+If any `.md` file is created or modified during this task, the agent must explicitly report:
+
+### File Changed
+
+The exact `.md` file path.
+
+### What Changed
+
+A concise description of the documentation changes.
+
+### Why
+
+Why the documentation needed to be updated.
+
+### Impact
+
+What effect the documentation change has on the project/workflow.
+
+The agent must then request human review and approval.
+
+A Markdown change is **not considered accepted or approved until the human review is completed**.
+
+Do not silently modify Markdown documentation.
+
+---
+
+## Human Review Gate
+
+Before considering Task 017 complete:
+
+1. Report the implementation changes.
+2. Report all files created or modified.
+3. Report all `.md` files changed separately.
+4. Explain the reason and impact of every `.md` change.
+5. Report verification results.
+6. Report any limitations or unresolved issues.
+7. Stop and wait for human review.
+
+The user will perform the final review.
+
+The user will handle the Git commit and GitHub push.
+
+The agent must not assume that implementation approval means Git commit approval.
+
+---
+
+## Expected Result
+
+After Task 017:
+
+- SalimSpend uses a consistent in-app confirmation modal instead of browser-native confirmation dialogs.
+- Confirmation actions work consistently across the application.
+- The five main pages are usable on mobile without unwanted horizontal page scrolling.
+- Transactions have an appropriate mobile presentation.
+- Dashboard responsiveness is improved without connecting it to Supabase.
+- Existing authentication, RLS, data ownership, and functionality remain intact.
+- Desktop behavior remains functional.
+- No unnecessary database or architectural changes are introduced.
+
+**Task 017 should remain focused on confirmation UX and responsive behavior.**
+
+**Dashboard Supabase integration must remain a separate future task.**

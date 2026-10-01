@@ -9,6 +9,7 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
+import ConfirmationModal from "../components/ConfirmationModal";
 import SidebarNav from "../components/SidebarNav";
 import { loadCategories } from "../lib/categories";
 import { createSupabaseClient } from "../lib/supabase";
@@ -45,6 +46,7 @@ export default function CategoriesPage({ currentView, onSelectView }) {
   const [editingId, setEditingId] = useState(null);
   const [formState, setFormState] = useState(defaultFormState);
   const [errorMessage, setErrorMessage] = useState("");
+  const [confirmationState, setConfirmationState] = useState(null);
 
   useEffect(() => {
     let isActive = true;
@@ -171,48 +173,48 @@ export default function CategoriesPage({ currentView, onSelectView }) {
     }
   };
 
-  const handleDelete = async (categoryId) => {
-    const targetCategory = categories.find(
-      (category) => category.id === categoryId,
-    );
-    if (!targetCategory) {
-      return;
-    }
+  const handleDelete = (category) => {
+    setConfirmationState({
+      title: "Delete category?",
+      message: `Delete "${category.name}"? Categories used by transactions cannot be deleted.`,
+      confirmLabel: "Delete category",
+      destructive: true,
+      onConfirm: async () => {
+        setConfirmationState((current) =>
+          current ? { ...current, isConfirming: true } : current,
+        );
 
-    const shouldDelete = window.confirm(
-      `Delete "${targetCategory.name}"? Categories used by transactions cannot be deleted.`,
-    );
+        try {
+          const { error } = await supabase
+            .from("categories")
+            .delete()
+            .eq("id", category.id);
 
-    if (!shouldDelete) {
-      return;
-    }
+          if (error) {
+            throw error;
+          }
 
-    try {
-      const { error } = await supabase
-        .from("categories")
-        .delete()
-        .eq("id", categoryId);
-
-      if (error) {
-        throw error;
-      }
-
-      setCategories((currentCategories) =>
-        currentCategories.filter((category) => category.id !== categoryId),
-      );
-      if (editingId === categoryId) {
-        resetForm();
-      }
-    } catch {
-      setErrorMessage(
-        "Unable to delete category. It may be linked to existing transactions.",
-      );
-    }
+          setCategories((currentCategories) =>
+            currentCategories.filter((entry) => entry.id !== category.id),
+          );
+          if (editingId === category.id) {
+            resetForm();
+          }
+          setConfirmationState(null);
+        } catch {
+          setErrorMessage(
+            "Unable to delete category. It may be linked to existing transactions.",
+          );
+          setConfirmationState(null);
+        }
+      },
+      onCancel: () => setConfirmationState(null),
+    });
   };
 
   return (
     <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
+      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block max-[680px]:pb-[72px]"
       aria-label="SalimSpend categories"
     >
       <SidebarNav
@@ -322,7 +324,7 @@ export default function CategoriesPage({ currentView, onSelectView }) {
                         type="button"
                         aria-label={`Delete ${category.name}`}
                         title={`Delete ${category.name}`}
-                        onClick={() => handleDelete(category.id)}
+                        onClick={() => handleDelete(category)}
                       >
                         <FiTrash2 aria-hidden="true" className="text-[14px]" />
                       </button>
@@ -338,6 +340,21 @@ export default function CategoriesPage({ currentView, onSelectView }) {
           }
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={Boolean(confirmationState)}
+        title={confirmationState?.title ?? "Confirm action"}
+        message={confirmationState?.message ?? ""}
+        confirmLabel={confirmationState?.confirmLabel ?? "Confirm"}
+        destructive={Boolean(confirmationState?.destructive)}
+        isConfirming={Boolean(confirmationState?.isConfirming)}
+        onConfirm={
+          confirmationState?.onConfirm ?? (() => setConfirmationState(null))
+        }
+        onCancel={
+          confirmationState?.onCancel ?? (() => setConfirmationState(null))
+        }
+      />
 
       {isFormOpen ?
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#1d2a29]/40 p-4">

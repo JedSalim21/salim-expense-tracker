@@ -50,7 +50,7 @@ The Transactions page is now connected to Supabase and behaves as a real user-ow
 - review their own transactions from the database
 - open a modal form to add a new income or expense
 - update an existing transaction
-- remove a transaction after confirmation
+- remove a transaction after a styled in-app confirmation flow matching the approved design reference
 - see loading, empty, and error states in the interface
 
 The page also prevents invalid input and handles database failures by surfacing clear user-facing messages instead of silently swallowing them.

@@ -9,6 +9,7 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
+import ConfirmationModal from "../components/ConfirmationModal";
 import SidebarNav from "../components/SidebarNav";
 import { loadCategories } from "../lib/categories";
 import { formatSignedCurrency } from "../lib/currency";
@@ -128,6 +129,7 @@ export default function TransactionsPage({
   currentView,
   onSelectView,
   currency,
+  onTransactionsChanged,
 }) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
@@ -144,10 +146,12 @@ export default function TransactionsPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [formState, setFormState] = useState(emptyFormState);
   const categoryMenuRef = useRef(null);
 
@@ -396,6 +400,7 @@ export default function TransactionsPage({
 
         return [normalizeTransaction(mutationResult), ...currentTransactions];
       });
+      onTransactionsChanged?.();
 
       resetForm();
     } catch (error) {
@@ -405,27 +410,30 @@ export default function TransactionsPage({
     }
   };
 
-  const handleDelete = async (transactionId) => {
+  const handleDelete = (transactionId) => {
     const target = transactions.find(
       (transaction) => transaction.id === transactionId,
     );
+
     if (!target) {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete "${target.description}"? This removes it from your transaction history.`,
-    );
+    setDeleteTarget(target);
+  };
 
-    if (!confirmed) {
+  const confirmDelete = async () => {
+    if (!deleteTarget || !supabase) {
       return;
     }
+
+    setIsDeleting(true);
 
     try {
       const { error } = await supabase
         .from("transactions")
         .delete()
-        .eq("id", transactionId);
+        .eq("id", deleteTarget.id);
 
       if (error) {
         throw error;
@@ -433,15 +441,20 @@ export default function TransactionsPage({
 
       setTransactions((currentTransactions) =>
         currentTransactions.filter(
-          (transaction) => transaction.id !== transactionId,
+          (transaction) => transaction.id !== deleteTarget.id,
         ),
       );
+      onTransactionsChanged?.();
 
-      if (editingId === transactionId) {
+      if (editingId === deleteTarget.id) {
         resetForm();
       }
+
+      setDeleteTarget(null);
     } catch (error) {
       setErrorMessage(error?.message ?? "Unable to delete this transaction.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -460,7 +473,7 @@ export default function TransactionsPage({
 
   return (
     <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block"
+      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block max-[680px]:pb-[72px]"
       aria-label="SalimSpend transactions"
     >
       <SidebarNav
@@ -548,55 +561,152 @@ export default function TransactionsPage({
                 }
               </div>
             </div>
-          : <div className="overflow-x-auto">
-              <div className="min-w-[860px]">
-                <div className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)_minmax(110px,0.6fr)] gap-4 border-b border-[var(--border)] px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                  <span>Description</span>
-                  <span>Amount</span>
-                  <span>Category</span>
-                  <span>Payment</span>
-                  <span>Date</span>
-                  <span className="text-right">Actions</span>
-                </div>
-
-                {transactions.map((transaction) => (
-                  <div
-                    className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)_minmax(110px,0.6fr)] items-center gap-4 border-b border-[var(--border)] px-3 py-4 text-[12px] text-[var(--text-primary)] last:border-b-0"
-                    key={transaction.id}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`grid h-[34px] w-[34px] place-items-center rounded-[7px] font-serif text-sm font-bold ${transaction.type === "income" ? "bg-[#dcece1] text-[#27735f]" : "bg-[#f2e9d5] text-[#a2662d]"}`}
-                      >
-                        {transaction.type === "income" ?
-                          <FiArrowUpRight aria-hidden="true" />
-                        : <FiArrowDownLeft aria-hidden="true" />}
-                      </span>
-                      <div className="min-w-0">
-                        <strong className="block truncate text-sm font-semibold text-[var(--text-heading)]">
-                          {transaction.description}
-                        </strong>
-                      </div>
+          : <div className="overflow-hidden">
+              <div className="max-[680px]:hidden">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[860px]">
+                    <div className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)_minmax(110px,0.6fr)] gap-4 border-b border-[var(--border)] px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                      <span>Description</span>
+                      <span>Amount</span>
+                      <span>Category</span>
+                      <span>Payment</span>
+                      <span>Date</span>
+                      <span className="text-right">Actions</span>
                     </div>
 
-                    <span
-                      className={`font-semibold ${transaction.type === "income" ? "text-[var(--brand)]" : "text-[var(--text-secondary)]"}`}
-                    >
-                      {formatTransactionAmount(
-                        transaction.amount,
-                        transaction.type,
-                        currency,
-                      )}
-                    </span>
-                    <span>{transaction.category?.name ?? "Unknown"}</span>
-                    <span>{transaction.paymentMethod?.name ?? "Unknown"}</span>
-                    <span className="text-[var(--text-secondary)]">
-                      {formatDate(transaction.occurred_at ?? transaction.date)}
-                    </span>
-                    <div className="flex justify-end gap-2">
+                    {transactions.map((transaction) => (
+                      <div
+                        className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)_minmax(110px,0.6fr)] items-center gap-4 border-b border-[var(--border)] px-3 py-4 text-[12px] text-[var(--text-primary)] last:border-b-0"
+                        key={transaction.id}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`grid h-[34px] w-[34px] place-items-center rounded-[7px] font-serif text-sm font-bold ${transaction.type === "income" ? "bg-[#dcece1] text-[#27735f]" : "bg-[#f2e9d5] text-[#a2662d]"}`}
+                          >
+                            {transaction.type === "income" ?
+                              <FiArrowUpRight aria-hidden="true" />
+                            : <FiArrowDownLeft aria-hidden="true" />}
+                          </span>
+                          <div className="min-w-0">
+                            <strong className="block truncate text-sm font-semibold text-[var(--text-heading)]">
+                              {transaction.description}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`font-semibold ${transaction.type === "income" ? "text-[var(--brand)]" : "text-[var(--text-secondary)]"}`}
+                        >
+                          {formatTransactionAmount(
+                            transaction.amount,
+                            transaction.type,
+                            currency,
+                          )}
+                        </span>
+                        <span>{transaction.category?.name ?? "Unknown"}</span>
+                        <span>
+                          {transaction.paymentMethod?.name ?? "Unknown"}
+                        </span>
+                        <span className="text-[var(--text-secondary)]">
+                          {formatDate(
+                            transaction.occurred_at ?? transaction.date,
+                          )}
+                        </span>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
+                            aria-label={`Edit ${transaction.description}`}
+                            onClick={() => openEditForm(transaction)}
+                          >
+                            <FiEdit2 aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--danger-border)] bg-[var(--danger-soft)] text-[var(--danger)] transition hover:bg-[var(--danger-hover)] focus-visible:outline-2 focus-visible:outline-[var(--danger)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
+                            aria-label={`Delete ${transaction.description}`}
+                            onClick={() => handleDelete(transaction.id)}
+                          >
+                            <FiTrash2 aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="hidden max-[680px]:grid gap-3">
+                {transactions.map((transaction) => (
+                  <article
+                    className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--card-shadow)]"
+                    key={transaction.id}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span
+                          className={`grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[8px] text-sm font-bold ${transaction.type === "income" ? "bg-[#dcece1] text-[#27735f]" : "bg-[#f2e9d5] text-[#a2662d]"}`}
+                        >
+                          {transaction.type === "income" ?
+                            <FiArrowUpRight aria-hidden="true" />
+                          : <FiArrowDownLeft aria-hidden="true" />}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                            {transaction.type === "income" ?
+                              "Income"
+                            : "Expense"}
+                          </p>
+                          <h3 className="mt-1 truncate text-sm font-bold text-[var(--text-heading)]">
+                            {transaction.description}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`whitespace-nowrap text-sm font-bold ${transaction.type === "income" ? "text-[var(--brand)]" : "text-[var(--text-secondary)]"}`}
+                      >
+                        {formatTransactionAmount(
+                          transaction.amount,
+                          transaction.type,
+                          currency,
+                        )}
+                      </span>
+                    </div>
+
+                    <dl className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)]">
+                      <div className="flex items-center justify-between gap-3">
+                        <dt className="font-medium text-[var(--text-muted)]">
+                          Category
+                        </dt>
+                        <dd className="text-right text-[var(--text-primary)]">
+                          {transaction.category?.name ?? "Unknown"}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <dt className="font-medium text-[var(--text-muted)]">
+                          Payment
+                        </dt>
+                        <dd className="text-right text-[var(--text-primary)]">
+                          {transaction.paymentMethod?.name ?? "Unknown"}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <dt className="font-medium text-[var(--text-muted)]">
+                          Date
+                        </dt>
+                        <dd className="text-right text-[var(--text-primary)]">
+                          {formatDate(
+                            transaction.occurred_at ?? transaction.date,
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="mt-4 flex justify-end gap-2">
                       <button
                         type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] transition hover:border-[#0f766e] hover:text-[#0f766e]"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
                         aria-label={`Edit ${transaction.description}`}
                         onClick={() => openEditForm(transaction)}
                       >
@@ -604,14 +714,14 @@ export default function TransactionsPage({
                       </button>
                       <button
                         type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] transition hover:border-[#b45309] hover:text-[#b45309]"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--danger-border)] bg-[var(--danger-soft)] text-[var(--danger)] transition hover:bg-[var(--danger-hover)] focus-visible:outline-2 focus-visible:outline-[var(--danger)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
                         aria-label={`Delete ${transaction.description}`}
                         onClick={() => handleDelete(transaction.id)}
                       >
                         <FiTrash2 aria-hidden="true" />
                       </button>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             </div>
@@ -619,9 +729,20 @@ export default function TransactionsPage({
         </div>
       </div>
 
+      <ConfirmationModal
+        isOpen={Boolean(deleteTarget)}
+        title="Delete transaction?"
+        message={`Delete "${deleteTarget?.description ?? "this transaction"}"? This removes it from your transaction history.`}
+        confirmLabel="Delete transaction"
+        destructive
+        isConfirming={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       {isFormOpen ?
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[rgba(17,24,39,0.45)] p-4">
-          <div className="w-full max-w-[560px] rounded-[12px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
+        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-[rgba(17,24,39,0.45)] p-4">
+          <div className="w-full max-w-[560px] overflow-hidden rounded-[12px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_20px_50px_rgba(15,23,42,0.18)] max-[680px]:max-w-full max-[680px]:p-4">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
@@ -749,7 +870,7 @@ export default function TransactionsPage({
                   : null}
                 </label>
 
-                <label className="grid gap-2 text-sm text-[var(--text-primary)]">
+                <div className="grid min-w-0 gap-2 text-sm text-[var(--text-primary)]">
                   <span className="font-semibold">Date and time</span>
                   <input
                     aria-describedby={
@@ -758,7 +879,7 @@ export default function TransactionsPage({
                       : undefined
                     }
                     aria-invalid={Boolean(validationErrors.occurredAt)}
-                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
+                    className={`block w-full min-w-0 max-w-full min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#0f766e] max-[680px]:hidden`}
                     type="datetime-local"
                     required
                     value={formState.occurredAt}
@@ -766,6 +887,49 @@ export default function TransactionsPage({
                       updateFormField("occurredAt", event.target.value)
                     }
                   />
+                  <div className="hidden grid-cols-2 gap-2 max-[680px]:grid">
+                    <label className="grid min-w-0 gap-1 text-xs text-[var(--text-secondary)]">
+                      <span>Date</span>
+                      <input
+                        aria-label="Date"
+                        aria-invalid={Boolean(validationErrors.occurredAt)}
+                        className={`w-full min-w-0 min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-2 text-[16px] text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
+                        type="date"
+                        required
+                        value={formState.occurredAt.slice(0, 10)}
+                        onChange={(event) => {
+                          const nextDate = event.target.value;
+                          const currentTime =
+                            formState.occurredAt.slice(11, 16) || "00:00";
+                          updateFormField(
+                            "occurredAt",
+                            nextDate ? `${nextDate}T${currentTime}` : "",
+                          );
+                        }}
+                      />
+                    </label>
+                    <label className="grid min-w-0 gap-1 text-xs text-[var(--text-secondary)]">
+                      <span>Time</span>
+                      <input
+                        aria-label="Time"
+                        aria-invalid={Boolean(validationErrors.occurredAt)}
+                        className={`w-full min-w-0 min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-2 text-[16px] text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
+                        type="time"
+                        required
+                        value={formState.occurredAt.slice(11, 16)}
+                        onChange={(event) => {
+                          const nextTime = event.target.value;
+                          const currentDate = formState.occurredAt.slice(0, 10);
+                          updateFormField(
+                            "occurredAt",
+                            currentDate && nextTime ?
+                              `${currentDate}T${nextTime}`
+                            : "",
+                          );
+                        }}
+                      />
+                    </label>
+                  </div>
                   {validationErrors.occurredAt ?
                     <span
                       className="text-xs text-[#8a3c26]"
@@ -774,7 +938,7 @@ export default function TransactionsPage({
                       {validationErrors.occurredAt}
                     </span>
                   : null}
-                </label>
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">

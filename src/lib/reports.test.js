@@ -60,12 +60,64 @@ test("calculateReportMetrics totals current-month income, expenses, and category
   assert.equal(metrics.summary.netCashFlow, 2950);
   assert.equal(metrics.summary.savingsRate, 84.29);
   assert.ok(
-    metrics.spendingBreakdown.some(
+    metrics.categoryBreakdown.some(
       (item) => item.label === "Food" && item.amount === 550,
     ),
   );
   assert.equal(metrics.monthlyTrend.length, 6);
-  assert.equal(metrics.topCategories[0].name, "Food");
+  assert.ok(
+    metrics.topCategories.some(
+      (item) => item.name === "Salary" && item.type === "income",
+    ),
+  );
+});
+
+test("includes income categories in breakdowns, top categories, and insights", () => {
+  const metrics = calculateReportMetrics(
+    [
+      {
+        amount: 4000,
+        type: "income",
+        date: currentMonth.toISOString().slice(0, 10),
+        category_id: "investment",
+      },
+      {
+        amount: 2000,
+        type: "expense",
+        date: currentMonth.toISOString().slice(0, 10),
+        category_id: "food",
+      },
+    ],
+    [
+      { id: "investment", name: "Investment" },
+      { id: "food", name: "Food" },
+    ],
+  );
+
+  assert.deepEqual(
+    metrics.categoryBreakdown.map(({ label, type, amount, percent }) => ({
+      label,
+      type,
+      amount,
+      percent,
+    })),
+    [
+      { label: "Investment", type: "income", amount: 4000, percent: 100 },
+      { label: "Food", type: "expense", amount: 2000, percent: 100 },
+    ],
+  );
+  assert.ok(
+    metrics.topCategories.some(
+      (item) => item.name === "Investment" && item.type === "income",
+    ),
+  );
+  assert.ok(
+    metrics.insights.some(
+      (insight) =>
+        insight.type === "top-income-category" &&
+        insight.category === "Investment",
+    ),
+  );
 });
 
 test("calculateReportMetrics filters by the selected report period", () => {
@@ -106,5 +158,16 @@ test("formats report insight amounts with the selected currency", () => {
   assert.equal(
     formatReportInsight({ type: "negative-cash-flow", amount: -1500 }, "EUR"),
     "You are currently below your income by -€1,500.00 for this period.",
+  );
+  assert.equal(
+    formatReportInsight(
+      {
+        type: "top-income-category",
+        category: "Investment",
+        percent: 100,
+      },
+      "PHP",
+    ),
+    "Investment is your largest income category, accounting for 100.0% of income.",
   );
 });

@@ -3,12 +3,11 @@ import {
   Show,
   SignIn,
   SignInButton,
-  SignOutButton,
   SignUpButton,
   UserButton,
   useAuth,
 } from "@clerk/react";
-import { FiDollarSign, FiLogIn, FiLogOut, FiUserPlus } from "react-icons/fi";
+import { FiDollarSign, FiLogIn, FiUserPlus } from "react-icons/fi";
 import packageJson from "../package.json";
 import {
   DEFAULT_CURRENCY,
@@ -20,6 +19,7 @@ import {
   normalizeCurrencyCode,
 } from "./lib/settings";
 import { createSupabaseClient } from "./lib/supabase";
+import ConfirmationModal from "./components/ConfirmationModal";
 import CategoriesPage from "./pages/CategoriesPage";
 import Dashboard from "./pages/Dashboard";
 import ReportsPage from "./pages/ReportsPage";
@@ -31,8 +31,10 @@ function App() {
   const [activeView, setActiveView] = useState("dashboard");
   const [theme, setTheme] = useState(() => getStoredTheme());
   const [currency, setCurrency] = useState(() => getStoredCurrency());
+  const [transactionsRevision, setTransactionsRevision] = useState(0);
   const [isResetting, setIsResetting] = useState(false);
   const [resetStatus, setResetStatus] = useState(null);
+  const [confirmationState, setConfirmationState] = useState(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -65,14 +67,6 @@ function App() {
 
   const handleResetData = async () => {
     setResetStatus(null);
-    const confirmed = window.confirm(
-      "This permanently deletes your SalimSpend transactions, categories, payment methods, and saved preferences. It does not delete your Clerk account or sign you out. Continue?",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
     setIsResetting(true);
 
     try {
@@ -107,6 +101,21 @@ function App() {
     } finally {
       setIsResetting(false);
     }
+  };
+
+  const handleResetDataRequest = () => {
+    setConfirmationState({
+      title: "Reset all data?",
+      message:
+        "This permanently deletes your SalimSpend transactions, categories, payment methods, and saved preferences. It does not delete your Clerk account or sign you out.",
+      confirmLabel: "Reset data",
+      destructive: true,
+      onConfirm: async () => {
+        setConfirmationState(null);
+        await handleResetData();
+      },
+      onCancel: () => setConfirmationState(null),
+    });
   };
 
   if (!isLoaded) {
@@ -155,21 +164,28 @@ function App() {
             </SignUpButton>
           </Show>
           <Show when="signed-in">
-            <SignOutButton>
-              <button
-                type="button"
-                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-[15px] leading-none text-[var(--text-primary)] transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2"
-              >
-                <FiLogOut aria-hidden="true" />
-                Sign out
-              </button>
-            </SignOutButton>
             <UserButton />
           </Show>
         </nav>
       </header>
 
       <main className="flex-1">
+        <ConfirmationModal
+          isOpen={Boolean(confirmationState)}
+          title={confirmationState?.title ?? "Confirm action"}
+          message={confirmationState?.message ?? ""}
+          confirmLabel={confirmationState?.confirmLabel ?? "Confirm"}
+          cancelLabel="Cancel"
+          destructive={Boolean(confirmationState?.destructive)}
+          isConfirming={isResetting}
+          onConfirm={
+            confirmationState?.onConfirm ?? (() => setConfirmationState(null))
+          }
+          onCancel={
+            confirmationState?.onCancel ?? (() => setConfirmationState(null))
+          }
+        />
+
         <Show when="signed-out">
           <section className="grid min-h-[calc(100svh-73px)] grid-cols-2 bg-[#f5f5f1] text-left max-[760px]:grid-cols-1">
             <div className="flex flex-col items-center justify-center border-r border-[#d9e4dc] bg-[#dce9e1] px-10 py-14 text-center max-[760px]:min-h-[280px] max-[760px]:border-b max-[760px]:border-r-0 max-[560px]:px-6 max-[560px]:py-10">
@@ -234,6 +250,9 @@ function App() {
               currentView={activeView}
               onSelectView={setActiveView}
               currency={currency}
+              onTransactionsChanged={() =>
+                setTransactionsRevision((revision) => revision + 1)
+              }
             />
           : activeView === "categories" ?
             <CategoriesPage
@@ -245,6 +264,7 @@ function App() {
               currentView={activeView}
               onSelectView={setActiveView}
               currency={currency}
+              transactionsRevision={transactionsRevision}
             />
           : activeView === "settings" ?
             <SettingsPage
@@ -264,7 +284,7 @@ function App() {
                 setCurrency(normalizeCurrencyCode(nextCurrency))
               }
               onExportData={handleExportData}
-              onResetAllData={handleResetData}
+              onResetAllData={handleResetDataRequest}
             />
           : <Dashboard
               currentView={activeView}
