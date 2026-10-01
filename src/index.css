@@ -16,6 +16,12 @@
   --brand: #0f766e;
   --brand-strong: #115e59;
   --brand-soft: #dfeae4;
+  --info: #3c72a2;
+  --info-soft: rgba(60, 114, 162, 0.12);
+  --warning: #c08222;
+  --warning-soft: rgba(192, 130, 34, 0.12);
+  --accent-rose: #b86c83;
+  --accent-rose-soft: rgba(184, 108, 131, 0.12);
   --sidebar-active: #dfeae4;
   --danger: #b42318;
   --danger-soft: #fef2f2;
@@ -46,6 +52,12 @@ html[data-theme="dark"] {
   --brand: #7fd4c3;
   --brand-strong: #a8e4d8;
   --brand-soft: rgba(127, 212, 195, 0.15);
+  --info: #8cc4f0;
+  --info-soft: rgba(140, 196, 240, 0.16);
+  --warning: #f1bd6d;
+  --warning-soft: rgba(241, 189, 109, 0.15);
+  --accent-rose: #f0aebd;
+  --accent-rose-soft: rgba(240, 174, 189, 0.16);
   --sidebar-active: rgba(127, 212, 195, 0.15);
   --danger: #fca5a5;
   --danger-soft: rgba(127, 29, 29, 0.24);
@@ -71,7 +83,6 @@ body {
   background: var(--page-bg);
   color: var(--text-primary);
 }
-
 button,
 a {
   font: inherit;

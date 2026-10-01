@@ -2,7 +2,7 @@
 
 ## Status
 
-**IMPLEMENTED**
+**ACCEPTED**
 
 ## Goal
 
@@ -49,5 +49,4 @@ Supabase ownership model.
 
 ## Human Review
 
-Implementation is complete. Human review and acceptance remain pending; this
-record does not mark the task accepted.
+**Accepted by the human reviewer on 2026-10-01.**

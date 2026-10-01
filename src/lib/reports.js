@@ -301,6 +301,126 @@ export function calculateReportMetrics(
   };
 }
 
+export function buildDashboardData(
+  transactions,
+  categories = [],
+  options = {},
+) {
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const period = options.period ?? "month";
+  const referenceDate =
+    options.asOfDate ? new Date(options.asOfDate) : new Date();
+  const bounds = getPeriodBounds(referenceDate, period);
+  const categoryMap = new Map(
+    (categories ?? []).map((category) => [category.id, category]),
+  );
+
+  const periodTransactions = safeTransactions
+    .map((transaction) => ({
+      ...transaction,
+      amount: Number(transaction.amount) || 0,
+      date: transaction.date ?? transaction.occurred_at?.slice(0, 10),
+    }))
+    .filter((transaction) => {
+      const value = transaction.date ?? transaction.occurred_at;
+      if (!value) {
+        return false;
+      }
+
+      const timestamp = new Date(`${value}T00:00:00`);
+      if (Number.isNaN(timestamp.getTime())) {
+        return false;
+      }
+
+      return timestamp >= bounds.start && timestamp <= bounds.end;
+    })
+    .sort((left, right) => {
+      const leftTimestamp = new Date(
+        `${left.date ?? left.occurred_at ?? "1970-01-01"}T00:00:00`,
+      );
+      const rightTimestamp = new Date(
+        `${right.date ?? right.occurred_at ?? "1970-01-01"}T00:00:00`,
+      );
+      return rightTimestamp - leftTimestamp;
+    });
+
+  const incomeTotal = periodTransactions
+    .filter((transaction) => transaction.type === "income")
+    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
+
+  const expensesTotal = periodTransactions
+    .filter((transaction) => transaction.type === "expense")
+    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
+
+  const expenseBreakdownMap = new Map();
+  for (const transaction of periodTransactions) {
+    if (transaction.type !== "expense") {
+      continue;
+    }
+
+    const categoryId = transaction.category_id ?? "uncategorized";
+    const category = categoryMap.get(categoryId) ?? {
+      name: "Uncategorized",
+      color: defaultCategoryPalette[0],
+    };
+    const currentValue = expenseBreakdownMap.get(categoryId) ?? {
+      label: category.name || "Uncategorized",
+      color: category.color || defaultCategoryPalette[0],
+      amount: 0,
+    };
+
+    currentValue.amount += Number(transaction.amount) || 0;
+    expenseBreakdownMap.set(categoryId, currentValue);
+  }
+
+  const categoryBreakdown = Array.from(expenseBreakdownMap.values())
+    .sort((left, right) => right.amount - left.amount)
+    .map((entry) => ({
+      ...entry,
+      amount: Number(entry.amount) || 0,
+      percent:
+        expensesTotal > 0 ?
+          ((Number(entry.amount) || 0) / expensesTotal) * 100
+        : 0,
+    }));
+
+  const recentTransactions = periodTransactions
+    .slice(0, 5)
+    .map((transaction) => {
+      const category = categoryMap.get(transaction.category_id) ?? {
+        name: "Uncategorized",
+        color: defaultCategoryPalette[0],
+      };
+      const merchant =
+        (transaction.description ?? "").trim() ||
+        (transaction.type === "income" ? "Income" : "Expense");
+
+      return {
+        id:
+          transaction.id ?? `${merchant}-${transaction.date ?? "transaction"}`,
+        merchant,
+        category: category.name || "Uncategorized",
+        date: transaction.date ?? transaction.occurred_at?.slice(0, 10),
+        amount:
+          transaction.type === "income" ?
+            Number(transaction.amount) || 0
+          : -(Number(transaction.amount) || 0),
+        color: category.color || defaultCategoryPalette[0],
+        glyph: (category.name || merchant).charAt(0).toUpperCase() || "T",
+      };
+    });
+
+  return {
+    summary: {
+      incomeTotal,
+      expensesTotal,
+      balance: incomeTotal - expensesTotal,
+    },
+    categoryBreakdown,
+    recentTransactions,
+  };
+}
+
 export function formatCurrency(value, currency) {
   return formatCurrencyValue(value, currency);
 }

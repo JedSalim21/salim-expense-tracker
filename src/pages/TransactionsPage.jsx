@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth, useUser } from "@clerk/react";
+import { DayPicker } from "@daypicker/react";
+import "@daypicker/react/style.css";
 import {
   FiArrowDownLeft,
   FiArrowUpRight,
@@ -103,6 +105,28 @@ function toLocalDateTimeInput(value) {
   return localDate.toISOString().slice(0, 16);
 }
 
+const twoDigitPart = (value) => String(value).padStart(2, "0");
+
+const dateTimeValueToDate = (value) => {
+  const [year, month, day] = (value ?? "").slice(0, 10).split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return undefined;
+  }
+
+  return new Date(year, month - 1, day);
+};
+
+const dateToDateTimeValue = (date) =>
+  `${date.getFullYear()}-${twoDigitPart(date.getMonth() + 1)}-${twoDigitPart(date.getDate())}`;
+
+const formatPickerDate = (date) =>
+  date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
 const normalizeTransaction = (record) => ({
   id: record.id,
   description: record.description,
@@ -148,12 +172,18 @@ export default function TransactionsPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [activePicker, setActivePicker] = useState(null);
+  const [activeDateTimePicker, setActiveDateTimePicker] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [formState, setFormState] = useState(emptyFormState);
   const categoryMenuRef = useRef(null);
+  const typeMenuRef = useRef(null);
+  const paymentMethodMenuRef = useRef(null);
+  const dateTimePickerRef = useRef(null);
+  const timePickerRef = useRef(null);
 
   useEffect(() => {
     if (!isCategoryMenuOpen) {
@@ -171,10 +201,58 @@ export default function TransactionsPage({
       document.removeEventListener("pointerdown", closeMenuOnOutsideClick);
   }, [isCategoryMenuOpen]);
 
+  useEffect(() => {
+    if (!activePicker) {
+      return undefined;
+    }
+
+    const pickerRefs = {
+      type: typeMenuRef,
+      paymentMethod: paymentMethodMenuRef,
+    };
+    const activePickerRef = pickerRefs[activePicker];
+    const closePickerOnOutsideClick = (event) => {
+      if (!activePickerRef?.current?.contains(event.target)) {
+        setActivePicker(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", closePickerOnOutsideClick);
+    return () =>
+      document.removeEventListener("pointerdown", closePickerOnOutsideClick);
+  }, [activePicker]);
+
+  useEffect(() => {
+    if (!activeDateTimePicker) {
+      return undefined;
+    }
+
+    const closePickerOnOutsideClick = (event) => {
+      if (!dateTimePickerRef.current?.contains(event.target)) {
+        setActiveDateTimePicker(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", closePickerOnOutsideClick);
+    return () =>
+      document.removeEventListener("pointerdown", closePickerOnOutsideClick);
+  }, [activeDateTimePicker]);
+
+  useEffect(() => {
+    if (activeDateTimePicker !== "time") {
+      return;
+    }
+
+    timePickerRef.current
+      ?.querySelectorAll('[aria-pressed="true"]')
+      .forEach((option) => option.scrollIntoView({ block: "center" }));
+  }, [activeDateTimePicker, formState.occurredAt]);
+
   const resetForm = () => {
     setIsFormOpen(false);
     setEditingId(null);
     setFormState(emptyFormState);
+    setActiveDateTimePicker(null);
     setErrorMessage("");
     setValidationErrors({});
   };
@@ -192,6 +270,19 @@ export default function TransactionsPage({
     });
   };
 
+  const selectedDate = dateTimeValueToDate(formState.occurredAt);
+  const [selectedHour = "00", selectedMinute = "00"] = formState.occurredAt
+    .slice(11, 16)
+    .split(":");
+
+  const updateTimePart = (part, value) => {
+    const nextHour = part === "hour" ? twoDigitPart(value) : selectedHour;
+    const nextMinute = part === "minute" ? twoDigitPart(value) : selectedMinute;
+    const currentDate = formState.occurredAt.slice(0, 10);
+
+    updateFormField("occurredAt", `${currentDate}T${nextHour}:${nextMinute}`);
+  };
+
   const openAddForm = () => {
     if (categories.length === 0 || paymentMethods.length === 0) {
       setErrorMessage(
@@ -201,6 +292,7 @@ export default function TransactionsPage({
     }
 
     setEditingId(null);
+    setActiveDateTimePicker(null);
     setFormState({
       ...emptyFormState,
       occurredAt: toLocalDateTimeInput(new Date()),
@@ -212,6 +304,7 @@ export default function TransactionsPage({
 
   const openEditForm = (transaction) => {
     setEditingId(transaction.id);
+    setActiveDateTimePicker(null);
     setFormState({
       description: transaction.description,
       amount: String(transaction.amount),
@@ -563,83 +656,83 @@ export default function TransactionsPage({
             </div>
           : <div className="overflow-hidden">
               <div className="max-[680px]:hidden">
-                <div className="overflow-x-auto">
-                  <div className="min-w-[860px]">
-                    <div className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)_minmax(110px,0.6fr)] gap-4 border-b border-[var(--border)] px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                      <span>Description</span>
-                      <span>Amount</span>
-                      <span>Category</span>
-                      <span>Payment</span>
-                      <span>Date</span>
-                      <span className="text-right">Actions</span>
-                    </div>
+                <div className="min-w-0">
+                  <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.1fr)_72px] gap-2 border-b border-[var(--border)] px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                    <span>Description</span>
+                    <span>Amount</span>
+                    <span>Category</span>
+                    <span>Payment</span>
+                    <span>Date</span>
+                    <span className="text-right">Actions</span>
+                  </div>
 
-                    {transactions.map((transaction) => (
-                      <div
-                        className="grid grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_minmax(150px,1fr)_minmax(160px,1fr)_minmax(110px,0.6fr)] items-center gap-4 border-b border-[var(--border)] px-3 py-4 text-[12px] text-[var(--text-primary)] last:border-b-0"
-                        key={transaction.id}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`grid h-[34px] w-[34px] place-items-center rounded-[7px] font-serif text-sm font-bold ${transaction.type === "income" ? "bg-[#dcece1] text-[#27735f]" : "bg-[#f2e9d5] text-[#a2662d]"}`}
-                          >
-                            {transaction.type === "income" ?
-                              <FiArrowUpRight aria-hidden="true" />
-                            : <FiArrowDownLeft aria-hidden="true" />}
-                          </span>
-                          <div className="min-w-0">
-                            <strong className="block truncate text-sm font-semibold text-[var(--text-heading)]">
-                              {transaction.description}
-                            </strong>
-                          </div>
-                        </div>
-
+                  {transactions.map((transaction) => (
+                    <div
+                      className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.1fr)_72px] items-center gap-2 border-b border-[var(--border)] px-3 py-4 text-[12px] text-[var(--text-primary)] last:border-b-0"
+                      key={transaction.id}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
                         <span
-                          className={`font-semibold ${transaction.type === "income" ? "text-[var(--brand)]" : "text-[var(--text-secondary)]"}`}
+                          className={`grid h-[34px] w-[34px] shrink-0 aspect-square place-items-center rounded-[7px] font-serif text-sm font-bold ${transaction.type === "income" ? "bg-[#dcece1] text-[#27735f]" : "bg-[#f2e9d5] text-[#a2662d]"}`}
                         >
-                          {formatTransactionAmount(
-                            transaction.amount,
-                            transaction.type,
-                            currency,
-                          )}
+                          {transaction.type === "income" ?
+                            <FiArrowUpRight aria-hidden="true" />
+                          : <FiArrowDownLeft aria-hidden="true" />}
                         </span>
-                        <span>{transaction.category?.name ?? "Unknown"}</span>
-                        <span>
-                          {transaction.paymentMethod?.name ?? "Unknown"}
-                        </span>
-                        <span className="text-[var(--text-secondary)]">
-                          {formatDate(
-                            transaction.occurred_at ?? transaction.date,
-                          )}
-                        </span>
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
-                            aria-label={`Edit ${transaction.description}`}
-                            onClick={() => openEditForm(transaction)}
-                          >
-                            <FiEdit2 aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--danger-border)] bg-[var(--danger-soft)] text-[var(--danger)] transition hover:bg-[var(--danger-hover)] focus-visible:outline-2 focus-visible:outline-[var(--danger)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
-                            aria-label={`Delete ${transaction.description}`}
-                            onClick={() => handleDelete(transaction.id)}
-                          >
-                            <FiTrash2 aria-hidden="true" />
-                          </button>
+                        <div className="min-w-0">
+                          <strong className="block break-words text-sm font-semibold text-[var(--text-heading)]">
+                            {transaction.description}
+                          </strong>
                         </div>
                       </div>
-                    ))}
-                  </div>
+
+                      <span
+                        className={`min-w-0 break-words font-semibold ${transaction.type === "income" ? "text-[var(--brand)]" : "text-[var(--text-secondary)]"}`}
+                      >
+                        {formatTransactionAmount(
+                          transaction.amount,
+                          transaction.type,
+                          currency,
+                        )}
+                      </span>
+                      <span className="min-w-0 break-words">
+                        {transaction.category?.name ?? "Unknown"}
+                      </span>
+                      <span className="min-w-0 break-words">
+                        {transaction.paymentMethod?.name ?? "Unknown"}
+                      </span>
+                      <span className="min-w-0 break-words text-[var(--text-secondary)]">
+                        {formatDate(
+                          transaction.occurred_at ?? transaction.date,
+                        )}
+                      </span>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)] transition hover:bg-[var(--brand)] hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
+                          aria-label={`Edit ${transaction.description}`}
+                          onClick={() => openEditForm(transaction)}
+                        >
+                          <FiEdit2 aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--danger-border)] bg-[var(--danger-soft)] text-[var(--danger)] transition hover:bg-[var(--danger-hover)] focus-visible:outline-2 focus-visible:outline-[var(--danger)] focus-visible:outline-offset-2 max-[680px]:h-10 max-[680px]:w-10"
+                          aria-label={`Delete ${transaction.description}`}
+                          onClick={() => handleDelete(transaction.id)}
+                        >
+                          <FiTrash2 aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="hidden max-[680px]:grid gap-3">
+              <div className="hidden min-w-0 grid-cols-[minmax(0,1fr)] gap-3 max-[680px]:grid">
                 {transactions.map((transaction) => (
                   <article
-                    className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--card-shadow)]"
+                    className="min-w-0 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--card-shadow)]"
                     key={transaction.id}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -674,28 +767,28 @@ export default function TransactionsPage({
                       </span>
                     </div>
 
-                    <dl className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)]">
-                      <div className="flex items-center justify-between gap-3">
+                    <dl className="mt-4 grid min-w-0 gap-2 text-sm text-[var(--text-secondary)]">
+                      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
                         <dt className="font-medium text-[var(--text-muted)]">
                           Category
                         </dt>
-                        <dd className="text-right text-[var(--text-primary)]">
+                        <dd className="min-w-0 break-words text-right text-[var(--text-primary)]">
                           {transaction.category?.name ?? "Unknown"}
                         </dd>
                       </div>
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
                         <dt className="font-medium text-[var(--text-muted)]">
                           Payment
                         </dt>
-                        <dd className="text-right text-[var(--text-primary)]">
+                        <dd className="min-w-0 break-words text-right text-[var(--text-primary)]">
                           {transaction.paymentMethod?.name ?? "Unknown"}
                         </dd>
                       </div>
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
                         <dt className="font-medium text-[var(--text-muted)]">
                           Date
                         </dt>
-                        <dd className="text-right text-[var(--text-primary)]">
+                        <dd className="min-w-0 break-words text-right text-[var(--text-primary)]">
                           {formatDate(
                             transaction.occurred_at ?? transaction.date,
                           )}
@@ -741,9 +834,9 @@ export default function TransactionsPage({
       />
 
       {isFormOpen ?
-        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-[rgba(17,24,39,0.45)] p-4">
-          <div className="w-full max-w-[560px] overflow-hidden rounded-[12px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_20px_50px_rgba(15,23,42,0.18)] max-[680px]:max-w-full max-[680px]:p-4">
-            <div className="mb-5 flex items-center justify-between gap-4">
+        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-[rgba(17,24,39,0.45)] p-4 max-[680px]:items-start max-[680px]:overflow-y-auto max-[680px]:py-4">
+          <div className="w-full max-w-[560px] rounded-[12px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_20px_50px_rgba(15,23,42,0.18)] max-[680px]:max-h-[calc(100dvh-2rem)] max-[680px]:min-h-0 max-[680px]:overflow-y-auto max-[680px]:overscroll-contain max-[680px]:max-w-full max-[680px]:p-4">
+            <div className="mb-5 flex shrink-0 items-center justify-between gap-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                   Transaction
@@ -841,25 +934,60 @@ export default function TransactionsPage({
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2 text-sm text-[var(--text-primary)]">
+                <div
+                  className="relative grid min-w-0 gap-2 text-sm text-[var(--text-primary)]"
+                  ref={typeMenuRef}
+                >
                   <span className="font-semibold">Type</span>
-                  <select
+                  <button
+                    aria-controls="transaction-type-options"
                     aria-describedby={
                       validationErrors.type ?
                         "transaction-type-error"
                       : undefined
                     }
                     aria-invalid={Boolean(validationErrors.type)}
-                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.type ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
-                    required
-                    value={formState.type}
-                    onChange={(event) =>
-                      updateFormField("type", event.target.value)
+                    aria-expanded={activePicker === "type"}
+                    aria-haspopup="menu"
+                    className={`flex min-h-[42px] w-full items-center justify-between rounded-[8px] border ${validationErrors.type ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-left text-[var(--text-primary)] outline-none transition focus:border-[#0f766e] focus:ring-2 focus:ring-[#dfeae4]`}
+                    onClick={() =>
+                      setActivePicker((currentPicker) =>
+                        currentPicker === "type" ? null : "type",
+                      )
                     }
+                    type="button"
                   >
-                    <option value="expense">Expense</option>
-                    <option value="income">Income</option>
-                  </select>
+                    <span>
+                      {formState.type === "income" ? "Income" : "Expense"}
+                    </span>
+                    <span aria-hidden="true">▾</span>
+                  </button>
+                  {activePicker === "type" ?
+                    <div
+                      className="absolute top-full z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-[8px] border border-[var(--border)] bg-[var(--surface)] py-1 shadow-[0_12px_28px_rgba(15,23,42,0.2)]"
+                      id="transaction-type-options"
+                      role="menu"
+                    >
+                      {[
+                        { value: "expense", label: "Expense" },
+                        { value: "income", label: "Income" },
+                      ].map((option) => (
+                        <button
+                          aria-checked={formState.type === option.value}
+                          className="block min-h-10 w-full px-3 text-left text-[var(--text-primary)] hover:bg-[var(--brand-soft)] focus:bg-[var(--brand-soft)] focus:outline-none"
+                          key={option.value}
+                          onClick={() => {
+                            updateFormField("type", option.value);
+                            setActivePicker(null);
+                          }}
+                          role="menuitemradio"
+                          type="button"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  : null}
                   {validationErrors.type ?
                     <span
                       className="text-xs text-[#8a3c26]"
@@ -868,68 +996,169 @@ export default function TransactionsPage({
                       {validationErrors.type}
                     </span>
                   : null}
-                </label>
+                </div>
 
-                <div className="grid min-w-0 gap-2 text-sm text-[var(--text-primary)]">
+                <div
+                  className="grid min-w-0 gap-2 text-sm text-[var(--text-primary)]"
+                  ref={dateTimePickerRef}
+                >
                   <span className="font-semibold">Date and time</span>
-                  <input
-                    aria-describedby={
-                      validationErrors.occurredAt ?
-                        "transaction-date-error"
-                      : undefined
-                    }
-                    aria-invalid={Boolean(validationErrors.occurredAt)}
-                    className={`block w-full min-w-0 max-w-full min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#0f766e] max-[680px]:hidden`}
-                    type="datetime-local"
-                    required
-                    value={formState.occurredAt}
-                    onChange={(event) =>
-                      updateFormField("occurredAt", event.target.value)
-                    }
-                  />
-                  <div className="hidden grid-cols-2 gap-2 max-[680px]:grid">
-                    <label className="grid min-w-0 gap-1 text-xs text-[var(--text-secondary)]">
-                      <span>Date</span>
-                      <input
-                        aria-label="Date"
+                  <div className="grid min-w-0 grid-cols-2 gap-2">
+                    <div className="grid min-w-0 gap-1 text-xs text-[var(--text-secondary)]">
+                      <span id="transaction-date-label">Date</span>
+                      <button
+                        aria-controls="transaction-date-picker"
+                        aria-describedby={
+                          validationErrors.occurredAt ?
+                            "transaction-date-error"
+                          : undefined
+                        }
+                        aria-expanded={activeDateTimePicker === "date"}
+                        aria-haspopup="dialog"
                         aria-invalid={Boolean(validationErrors.occurredAt)}
-                        className={`w-full min-w-0 min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-2 text-[16px] text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
-                        type="date"
-                        required
-                        value={formState.occurredAt.slice(0, 10)}
-                        onChange={(event) => {
-                          const nextDate = event.target.value;
+                        aria-labelledby="transaction-date-label transaction-date-value"
+                        className={`flex min-h-[42px] min-w-0 w-full items-center justify-between gap-2 rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-left text-sm text-[var(--text-primary)] outline-none transition hover:border-[#0f766e] focus:border-[#0f766e] focus:ring-2 focus:ring-[#dfeae4]`}
+                        onClick={() =>
+                          setActiveDateTimePicker((currentPicker) =>
+                            currentPicker === "date" ? null : "date",
+                          )
+                        }
+                        type="button"
+                      >
+                        <span className="truncate" id="transaction-date-value">
+                          {selectedDate ?
+                            formatPickerDate(selectedDate)
+                          : "Select date"}
+                        </span>
+                        <span aria-hidden="true">▾</span>
+                      </button>
+                    </div>
+                    <div className="grid min-w-0 gap-1 text-xs text-[var(--text-secondary)]">
+                      <span id="transaction-time-label">Time</span>
+                      <button
+                        aria-controls="transaction-time-picker"
+                        aria-describedby={
+                          validationErrors.occurredAt ?
+                            "transaction-date-error"
+                          : undefined
+                        }
+                        aria-expanded={activeDateTimePicker === "time"}
+                        aria-haspopup="dialog"
+                        aria-invalid={Boolean(validationErrors.occurredAt)}
+                        aria-labelledby="transaction-time-label transaction-time-value"
+                        className={`flex min-h-[42px] min-w-0 w-full items-center justify-between gap-2 rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-left text-sm text-[var(--text-primary)] outline-none transition hover:border-[#0f766e] focus:border-[#0f766e] focus:ring-2 focus:ring-[#dfeae4]`}
+                        onClick={() =>
+                          setActiveDateTimePicker((currentPicker) =>
+                            currentPicker === "time" ? null : "time",
+                          )
+                        }
+                        type="button"
+                      >
+                        <span className="truncate" id="transaction-time-value">
+                          {selectedHour}:{selectedMinute}
+                        </span>
+                        <span aria-hidden="true">▾</span>
+                      </button>
+                    </div>
+                  </div>
+                  {activeDateTimePicker === "date" ?
+                    <div
+                      aria-label="Select transaction date"
+                      className="w-full min-w-0 max-w-full overflow-x-auto rounded-[8px] border border-[var(--border)] bg-[var(--surface)] p-2 shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
+                      id="transaction-date-picker"
+                      role="dialog"
+                      aria-modal="false"
+                    >
+                      <DayPicker
+                        className="mx-auto max-w-full"
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          if (!date) {
+                            return;
+                          }
+
                           const currentTime =
                             formState.occurredAt.slice(11, 16) || "00:00";
                           updateFormField(
                             "occurredAt",
-                            nextDate ? `${nextDate}T${currentTime}` : "",
+                            `${dateToDateTimeValue(date)}T${currentTime}`,
                           );
+                          setActiveDateTimePicker(null);
+                        }}
+                        style={{
+                          "--rdp-accent-color": "var(--brand)",
+                          "--rdp-accent-background-color": "var(--brand-soft)",
+                          "--rdp-day-width": "36px",
+                          "--rdp-day-height": "36px",
+                          "--rdp-day_button-width": "34px",
+                          "--rdp-day_button-height": "34px",
+                          "--rdp-day_button-border-radius": "8px",
+                          "--rdp-nav_button-width": "32px",
+                          "--rdp-nav_button-height": "32px",
                         }}
                       />
-                    </label>
-                    <label className="grid min-w-0 gap-1 text-xs text-[var(--text-secondary)]">
-                      <span>Time</span>
-                      <input
-                        aria-label="Time"
-                        aria-invalid={Boolean(validationErrors.occurredAt)}
-                        className={`w-full min-w-0 min-h-[42px] rounded-[8px] border ${validationErrors.occurredAt ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-2 text-[16px] text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
-                        type="time"
-                        required
-                        value={formState.occurredAt.slice(11, 16)}
-                        onChange={(event) => {
-                          const nextTime = event.target.value;
-                          const currentDate = formState.occurredAt.slice(0, 10);
-                          updateFormField(
-                            "occurredAt",
-                            currentDate && nextTime ?
-                              `${currentDate}T${nextTime}`
-                            : "",
-                          );
-                        }}
-                      />
-                    </label>
-                  </div>
+                    </div>
+                  : null}
+                  {activeDateTimePicker === "time" ?
+                    <div
+                      aria-label="Select transaction time"
+                      className="grid min-w-0 grid-cols-2 gap-3 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
+                      id="transaction-time-picker"
+                      ref={timePickerRef}
+                      role="dialog"
+                      aria-modal="false"
+                    >
+                      <div className="grid min-w-0 gap-2">
+                        <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                          Hour
+                        </span>
+                        <div className="grid max-h-40 min-w-0 grid-cols-3 gap-1 overflow-y-auto overscroll-contain rounded-[6px] bg-[var(--page-bg)] p-1">
+                          {Array.from({ length: 24 }, (_, hour) => {
+                            const hourValue = twoDigitPart(hour);
+                            const isSelected = selectedHour === hourValue;
+
+                            return (
+                              <button
+                                aria-label={`Hour ${hourValue}`}
+                                aria-pressed={isSelected}
+                                className={`min-h-9 rounded-[6px] text-sm transition focus:outline-none focus:ring-2 focus:ring-[#0f766e] ${isSelected ? "bg-[var(--brand)] font-semibold text-white" : "text-[var(--text-primary)] hover:bg-[var(--brand-soft)]"}`}
+                                key={hourValue}
+                                onClick={() => updateTimePart("hour", hour)}
+                                type="button"
+                              >
+                                {hourValue}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="grid min-w-0 gap-2">
+                        <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                          Minute
+                        </span>
+                        <div className="grid max-h-40 min-w-0 grid-cols-3 gap-1 overflow-y-auto overscroll-contain rounded-[6px] bg-[var(--page-bg)] p-1">
+                          {Array.from({ length: 60 }, (_, minute) => {
+                            const minuteValue = twoDigitPart(minute);
+                            const isSelected = selectedMinute === minuteValue;
+
+                            return (
+                              <button
+                                aria-label={`Minute ${minuteValue}`}
+                                aria-pressed={isSelected}
+                                className={`min-h-9 rounded-[6px] text-sm transition focus:outline-none focus:ring-2 focus:ring-[#0f766e] ${isSelected ? "bg-[var(--brand)] font-semibold text-white" : "text-[var(--text-primary)] hover:bg-[var(--brand-soft)]"}`}
+                                key={minuteValue}
+                                onClick={() => updateTimePart("minute", minute)}
+                                type="button"
+                              >
+                                {minuteValue}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  : null}
                   {validationErrors.occurredAt ?
                     <span
                       className="text-xs text-[#8a3c26]"
@@ -1013,29 +1242,79 @@ export default function TransactionsPage({
                   : null}
                 </div>
 
-                <label className="grid gap-2 text-sm text-[var(--text-primary)]">
+                <div
+                  className="relative grid min-w-0 gap-2 text-sm text-[var(--text-primary)]"
+                  ref={paymentMethodMenuRef}
+                >
                   <span className="font-semibold">Payment method</span>
-                  <select
+                  <button
+                    aria-controls="transaction-payment-method-options"
                     aria-describedby={
                       validationErrors.payment_method_id ?
                         "transaction-payment-method-error"
                       : undefined
                     }
                     aria-invalid={Boolean(validationErrors.payment_method_id)}
-                    className={`min-h-[42px] rounded-[8px] border ${validationErrors.payment_method_id ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-[var(--text-primary)] outline-none transition focus:border-[#0f766e]`}
-                    required
-                    value={formState.payment_method_id}
-                    onChange={(event) =>
-                      updateFormField("payment_method_id", event.target.value)
+                    aria-expanded={activePicker === "paymentMethod"}
+                    aria-haspopup="menu"
+                    className={`flex min-h-[42px] w-full items-center justify-between rounded-[8px] border ${validationErrors.payment_method_id ? "border-[#b45309]" : "border-[var(--border)]"} bg-[var(--page-bg)] px-3 text-left text-[var(--text-primary)] outline-none transition focus:border-[#0f766e] focus:ring-2 focus:ring-[#dfeae4]`}
+                    onClick={() =>
+                      setActivePicker((currentPicker) =>
+                        currentPicker === "paymentMethod" ? null : (
+                          "paymentMethod"
+                        ),
+                      )
                     }
+                    type="button"
                   >
-                    <option value="">Select a payment method</option>
-                    {paymentMethods.map((paymentMethod) => (
-                      <option key={paymentMethod.id} value={paymentMethod.id}>
-                        {paymentMethod.name}
-                      </option>
-                    ))}
-                  </select>
+                    <span>
+                      {paymentMethods.find(
+                        (paymentMethod) =>
+                          paymentMethod.id === formState.payment_method_id,
+                      )?.name ?? "Select a payment method"}
+                    </span>
+                    <span aria-hidden="true">▾</span>
+                  </button>
+                  {activePicker === "paymentMethod" ?
+                    <div
+                      className="absolute top-full z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-[8px] border border-[var(--border)] bg-[var(--surface)] py-1 shadow-[0_12px_28px_rgba(15,23,42,0.2)]"
+                      id="transaction-payment-method-options"
+                      role="menu"
+                    >
+                      <button
+                        aria-checked={!formState.payment_method_id}
+                        className="block min-h-10 w-full px-3 text-left text-[var(--text-primary)] hover:bg-[var(--brand-soft)] focus:bg-[var(--brand-soft)] focus:outline-none"
+                        onClick={() => {
+                          updateFormField("payment_method_id", "");
+                          setActivePicker(null);
+                        }}
+                        role="menuitemradio"
+                        type="button"
+                      >
+                        Select a payment method
+                      </button>
+                      {paymentMethods.map((paymentMethod) => (
+                        <button
+                          aria-checked={
+                            paymentMethod.id === formState.payment_method_id
+                          }
+                          className="block min-h-10 w-full px-3 text-left text-[var(--text-primary)] hover:bg-[var(--brand-soft)] focus:bg-[var(--brand-soft)] focus:outline-none"
+                          key={paymentMethod.id}
+                          onClick={() => {
+                            updateFormField(
+                              "payment_method_id",
+                              paymentMethod.id,
+                            );
+                            setActivePicker(null);
+                          }}
+                          role="menuitemradio"
+                          type="button"
+                        >
+                          {paymentMethod.name}
+                        </button>
+                      ))}
+                    </div>
+                  : null}
                   {validationErrors.payment_method_id ?
                     <span
                       className="text-xs text-[#8a3c26]"
@@ -1044,26 +1323,26 @@ export default function TransactionsPage({
                       {validationErrors.payment_method_id}
                     </span>
                   : null}
-                </label>
+                </div>
               </div>
 
-              <div className="mt-2 flex items-center justify-end gap-3">
+              <div className="mt-2 flex flex-col-reverse items-stretch gap-2 min-[480px]:flex-row min-[480px]:justify-end min-[480px]:gap-3 max-[680px]:mt-0 max-[680px]:border-t max-[680px]:border-[var(--border)] max-[680px]:bg-[var(--surface)] max-[680px]:pt-3">
                 <button
                   type="button"
-                  className="inline-flex min-h-[42px] items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--text-primary)] transition hover:border-[#0f766e] hover:text-[#0f766e]"
+                  className="inline-flex min-h-12 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--text-primary)] transition hover:border-[#0f766e] hover:text-[#0f766e] min-[480px]:min-h-[42px]"
                   onClick={resetForm}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex min-h-[42px] items-center justify-center rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#a4b4b0]"
+                  className="inline-flex min-h-12 items-center justify-center rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#a4b4b0] min-[480px]:min-h-[42px]"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ?
                     "Saving..."
                   : editingId ?
-                    "Update transaction"
+                    "Save Changes"
                   : "Save transaction"}
                 </button>
               </div>

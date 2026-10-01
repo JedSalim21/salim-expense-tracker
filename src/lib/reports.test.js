@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { calculateReportMetrics, formatReportInsight } from "./reports.js";
+import {
+  buildDashboardData,
+  calculateReportMetrics,
+  formatReportInsight,
+} from "./reports.js";
 
 const now = new Date();
 const currentMonth = new Date(now.getFullYear(), now.getMonth(), 5);
@@ -148,6 +152,48 @@ test("calculateReportMetrics filters by the selected report period", () => {
   assert.equal(weekMetrics.summary.totalExpenses, 400);
   assert.equal(yearMetrics.summary.totalIncome, 1200);
   assert.equal(yearMetrics.summary.totalExpenses, 1470);
+});
+
+test("buildDashboardData calculates the selected period totals and recent transactions", () => {
+  const asOfDate = new Date("2026-09-26T12:00:00");
+  const data = buildDashboardData(
+    [
+      {
+        amount: 1200,
+        type: "income",
+        date: "2026-09-26",
+        category_id: "salary",
+      },
+      { amount: 400, type: "expense", date: "2026-09-25", category_id: "food" },
+      { amount: 750, type: "expense", date: "2026-09-19", category_id: "rent" },
+      {
+        amount: 320,
+        type: "expense",
+        date: "2026-08-14",
+        category_id: "travel",
+      },
+      { amount: 900, type: "income", date: "2025-12-29", category_id: "gift" },
+    ],
+    [
+      { id: "salary", name: "Salary", color: "#0f766e" },
+      { id: "food", name: "Food", color: "#f59e0b" },
+      { id: "rent", name: "Housing", color: "#2563eb" },
+      { id: "travel", name: "Travel", color: "#e879a8" },
+      { id: "gift", name: "Gift", color: "#8b5cf6" },
+    ],
+    { period: "week", asOfDate },
+  );
+
+  assert.equal(data.summary.incomeTotal, 1200);
+  assert.equal(data.summary.expensesTotal, 400);
+  assert.equal(data.summary.balance, 800);
+  assert.equal(data.categoryBreakdown.length, 1);
+  assert.deepEqual(
+    data.categoryBreakdown.map(({ label, amount }) => ({ label, amount })),
+    [{ label: "Food", amount: 400 }],
+  );
+  assert.equal(data.recentTransactions.length, 2);
+  assert.equal(data.recentTransactions[0].merchant, "Income");
 });
 
 test("formats report insight amounts with the selected currency", () => {

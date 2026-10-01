@@ -6512,3 +6512,456 @@ After Task 017:
 **Task 017 should remain focused on confirmation UX and responsive behavior.**
 
 **Dashboard Supabase integration must remain a separate future task.**
+
+# Task 018 — Dashboard Data Connection
+
+## Status
+
+**APPROVED**
+
+---
+
+## Goal
+
+Connect the existing SalimSpend Dashboard UI to real Supabase transaction data.
+
+The Dashboard should display current user transaction data dynamically while preserving the existing SalimSpend design, existing responsive structure, currency integration, and navigation.
+
+This task focuses on **connecting the existing Dashboard to live data**, with only the necessary UI adjustments required to properly display the data on desktop and mobile.
+
+---
+
+## Current Context
+
+SalimSpend already has:
+
+- Working Clerk authentication
+- Supabase transaction data
+- Row Level Security (RLS) based on `clerk_user_id`
+- Working transaction CRUD
+- Working Categories
+- Working Reports
+- Working Currency Integration from Task 016
+- Existing Dashboard UI
+- Mobile navigation from Task 017
+
+### Mobile Navigation
+
+Task 017 established the current mobile navigation:
+
+**Dashboard | Transactions | More**
+
+The **More** menu contains:
+
+- Categories
+- Reports
+- Settings
+
+This navigation is already implemented and must remain unchanged during Task 018.
+
+---
+
+## Mobile Viewport Reference
+
+The user will provide an image reference showing the **Dashboard at a mobile viewport**.
+
+The image is **only a mobile viewport/layout reference**.
+
+Use it to understand:
+
+- Mobile spacing
+- Section positioning
+- Responsive arrangement
+- How dashboard content should fit within the mobile screen
+- General mobile viewport behavior
+
+The image is **not a reference for the overall Dashboard design**.
+
+Do not copy its:
+
+- Colors
+- Typography
+- Components
+- Cards
+- Icons
+- Visual style
+- Desktop layout
+
+The existing SalimSpend Dashboard design and design system remain the **source of truth**.
+
+---
+
+## Dashboard Requirements
+
+### 1. Income
+
+Display the user's total income for the selected dashboard period.
+
+Income transactions should be identified using the existing transaction `type`.
+
+The Income card is a **display-only summary card**.
+
+It must **not** become clickable.
+
+---
+
+### 2. Expenses
+
+Display the user's total expenses for the selected dashboard period.
+
+Expense transactions should be identified using the existing transaction `type`.
+
+The Expenses card is a **display-only summary card**.
+
+It must **not** become clickable.
+
+---
+
+### 3. Current Balance
+
+Calculate and display:
+
+**Income − Expenses**
+
+Use the existing currency formatting from Task 016.
+
+The Current Balance card is a **display-only summary card**.
+
+It must **not** become clickable.
+
+---
+
+## 4. Category Breakdown
+
+Connect the existing Category Breakdown section to real transaction data.
+
+Show expense totals grouped by category.
+
+The section must support:
+
+- **Week**
+- **Month**
+- **Year**
+
+Use the existing category relationships.
+
+Do not create a second category system specifically for the Dashboard.
+
+---
+
+## 5. Recent Transactions
+
+Connect the existing Recent Transactions section to real transaction data.
+
+Display the user's most recent transactions using the existing transaction structure and UI.
+
+The section must support:
+
+- **Week**
+- **Month**
+- **Year**
+
+Include:
+
+**See all →**
+
+This should navigate to the existing Transactions page.
+
+Do not create a new Transactions page.
+
+---
+
+## Shared Period Selector
+
+Category Breakdown and Recent Transactions must use **one shared period selector**.
+
+Available options:
+
+- Week
+- Month
+- Year
+
+When the user changes the selector:
+
+**Week**
+→ Category Breakdown updates to week data
+→ Recent Transactions updates to week data
+
+**Month**
+→ Category Breakdown updates to month data
+→ Recent Transactions updates to month data
+
+**Year**
+→ Category Breakdown updates to year data
+→ Recent Transactions updates to year data
+
+The selected period should remain visually clear using the existing SalimSpend UI style.
+
+---
+
+## Summary Card Icons
+
+Keep or add appropriate icons to:
+
+- Income
+- Expenses
+- Current Balance
+- Category Breakdown
+- Recent Transactions
+
+Use the existing icon library/system already used by SalimSpend where possible.
+
+Do not introduce another icon library unless absolutely necessary.
+
+---
+
+## Data Requirements
+
+Use the existing Supabase transaction data.
+
+The Dashboard must only retrieve and display transactions belonging to the currently authenticated user.
+
+Respect the existing:
+
+- Clerk authentication
+- Supabase access token
+- RLS policies
+- `clerk_user_id`
+
+Do not bypass RLS.
+
+Do not expose another user's transaction data.
+
+---
+
+## Currency
+
+Reuse the currency system implemented in **Task 016 — Currency Integration**.
+
+All Dashboard monetary values must respect the user's selected currency.
+
+Do not change the underlying transaction amounts.
+
+Do not create a separate Dashboard currency system.
+
+---
+
+## Date and Period Handling
+
+Use the existing transaction date/time data.
+
+Respect the existing transaction date structure, including the current `occurred_at` / date fallback behavior where already implemented.
+
+Period filtering must correctly determine:
+
+- Current week
+- Current month
+- Current year
+
+Do not introduce unnecessary database schema changes.
+
+---
+
+## Empty States
+
+Handle cases where the user has no transactions.
+
+The Dashboard should remain usable and visually clean when:
+
+- There are no transactions at all.
+- There are no income transactions.
+- There are no expense transactions.
+- There are no transactions for the selected Week / Month / Year period.
+- A category has no transactions.
+
+Do not show misleading totals or broken UI.
+
+---
+
+## Loading and Error States
+
+Handle the Dashboard data lifecycle appropriately.
+
+Provide reasonable UI feedback while transaction data is loading.
+
+If Supabase data fails to load, show a user-friendly error state rather than breaking the Dashboard.
+
+Do not expose raw technical errors to the user.
+
+---
+
+## Responsive Requirements
+
+The Dashboard must work correctly on:
+
+- Desktop
+- Tablet
+- Mobile
+
+The existing SalimSpend Dashboard design should remain intact.
+
+On mobile:
+
+- Use the provided image **only as a viewport/layout reference**.
+- Prevent horizontal overflow.
+- Ensure all Dashboard sections fit properly within the mobile viewport.
+- Maintain readable spacing and content hierarchy.
+- Preserve the existing mobile navigation.
+
+The mobile navigation must remain:
+
+**Dashboard | Transactions | More**
+
+The **More** menu must continue to contain:
+
+- Categories
+- Reports
+- Settings
+
+---
+
+## Design Constraints
+
+Do not unnecessarily redesign the Dashboard.
+
+Preserve the existing:
+
+- Layout
+- Spacing
+- Typography
+- Colors
+- Cards
+- Sections
+- Icons
+- Responsive structure
+- Navigation
+
+The provided image is **only a mobile viewport reference**.
+
+Do not use it as a replacement for the existing SalimSpend design system.
+
+Only make UI changes that are necessary to connect and properly display the live data.
+
+---
+
+## Scope
+
+### Included
+
+- Connecting Dashboard to Supabase transactions
+- Income calculation
+- Expense calculation
+- Current Balance calculation
+- Category Breakdown data
+- Recent Transactions data
+- Week / Month / Year filtering
+- Shared period selector
+- Currency formatting integration
+- Loading states
+- Empty states
+- Error handling
+- Responsive data rendering
+- Necessary mobile layout adjustments
+
+### Not Included
+
+- Unnecessary Dashboard redesign
+- New Dashboard pages
+- New transaction schema
+- New category system
+- Changes to transaction CRUD
+- Changes to Reports
+- Changes to Settings
+- Changes to Currency Integration
+- Changes to mobile navigation
+- Paid features
+- Subscription/billing features
+
+---
+
+## Navigation Preservation
+
+Task 017 established the mobile navigation:
+
+**Dashboard | Transactions | More**
+
+This structure must remain unchanged.
+
+The **More** menu must continue to provide access to:
+
+- Categories
+- Reports
+- Settings
+
+Task 018 must not replace this with another navigation system.
+
+---
+
+## Constraints
+
+1. Connect the existing Dashboard to real Supabase data.
+2. Do not unnecessarily redesign the Dashboard.
+3. Do not change the existing mobile navigation.
+4. Do not replace **Dashboard / Transactions / More**.
+5. Do not modify Category, Reports, Settings, or transaction CRUD unless required for integration.
+6. Do not bypass Supabase RLS.
+7. Do not change the transaction schema unless absolutely necessary.
+8. Do not create duplicate currency formatting logic.
+9. Do not add unnecessary dependencies.
+10. Do not introduce paid features or billing.
+11. Do not commit or push to GitHub.
+12. Preserve unrelated existing worktree changes.
+13. Treat the provided image **only as a mobile viewport reference**.
+14. Do not copy the image's overall design or visual style.
+
+---
+
+## Human Review Gate
+
+Before implementation:
+
+1. Read the current `AGENT.md`, `SKILL.md`, project docs, and relevant task documentation.
+2. Inspect the existing Dashboard implementation.
+3. Inspect the existing transaction data/query patterns.
+4. Inspect the existing currency integration from Task 016.
+5. Inspect the mobile navigation from Task 017.
+6. Review the provided **mobile viewport reference image**.
+7. Identify the minimum files that need to change.
+8. Present the proposed implementation approach for human review.
+9. **Do not implement until explicitly approved.**
+
+After implementation, report:
+
+- Files changed
+- What changed in each file
+- Why each change was necessary
+- Any new dependency added
+- Any database/schema changes
+- Lint/build results
+- Any remaining limitations
+
+Do not commit or push.
+
+---
+
+## Success Criteria
+
+Task 018 is successful when the existing SalimSpend Dashboard displays **real, authenticated Supabase transaction data** for:
+
+- Income
+- Expenses
+- Current Balance
+- Category Breakdown
+- Recent Transactions
+
+with the Week / Month / Year selector correctly controlling the relevant Dashboard sections.
+
+The Dashboard must preserve:
+
+- Existing SalimSpend design
+- Existing currency integration
+- Responsive behavior
+- Mobile viewport usability
+- **Dashboard / Transactions / More** mobile navigation
+
+The provided image is used **only as a mobile viewport reference**, not as a replacement for the existing Dashboard design.

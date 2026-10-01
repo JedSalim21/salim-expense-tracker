@@ -290,6 +290,7 @@ function App() {
               currentView={activeView}
               onSelectView={setActiveView}
               currency={currency}
+              transactionsRevision={transactionsRevision}
             />
           }
         </Show>
