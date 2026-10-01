@@ -7,7 +7,7 @@ import {
   UserButton,
   useAuth,
 } from "@clerk/react";
-import { FiDollarSign, FiLogIn, FiUserPlus } from "react-icons/fi";
+import { FiLogIn, FiUserPlus } from "react-icons/fi";
 import packageJson from "../package.json";
 import {
   DEFAULT_CURRENCY,
@@ -131,13 +131,18 @@ function App() {
 
   return (
     <>
-      <header className="flex min-h-[72px] items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-8 text-[var(--text-primary)] max-[720px]:min-h-0 max-[720px]:flex-wrap max-[720px]:gap-4 max-[720px]:px-5 max-[720px]:py-[18px]">
+      <header className="flex min-h-[105px] items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-8 text-[var(--text-primary)] max-[720px]:min-h-0 max-[720px]:flex-wrap max-[720px]:gap-4 max-[720px]:px-5 max-[720px]:py-[18px]">
         <a
-          className="inline-flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] no-underline"
+          className="inline-flex items-center text-[var(--text-primary)] no-underline"
           href="/"
+          aria-label="SalimSpend home"
         >
-          <FiDollarSign className="text-[var(--brand)]" aria-hidden="true" />
-          SalimSpend
+          <img
+            className="app-header-logo h-[97px] w-[150px] object-contain"
+            src="/ui-reference/logo1.png"
+            alt=""
+            aria-hidden="true"
+          />
         </a>
         <nav
           className="flex min-h-10 items-center gap-[10px] max-[720px]:flex-wrap max-[720px]:justify-end"
@@ -195,12 +200,11 @@ function App() {
               <h1 className="mt-5 max-w-[320px] font-serif text-[clamp(34px,4vw,50px)] font-normal leading-[1.04] text-[#183b34]">
                 Your money, in one clear place.
               </h1>
-              <div
-                className="mt-8 grid h-20 w-20 place-items-center rounded-full border-8 border-[#b8d1ae] bg-[#fffefa] font-serif text-2xl text-[#0f766e] shadow-[0_10px_18px_rgba(15,118,110,0.14)]"
-                aria-hidden="true"
-              >
-                S
-              </div>
+              <img
+                className="mt-6 h-[149px] w-[230px] object-contain mix-blend-darken"
+                src="/ui-reference/logo1.png"
+                alt="SalimSpend logo"
+              />
             </div>
             <div className="flex items-center justify-center bg-[#f8f8f5] px-10 py-14 max-[760px]:px-6 max-[760px]:py-10">
               <div className="w-full max-w-[390px]">

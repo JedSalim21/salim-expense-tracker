@@ -67,6 +67,11 @@ html[data-theme="dark"] {
   --card-shadow: 0 10px 22px rgba(7, 13, 18, 0.26);
 }
 
+html[data-theme="dark"] .app-header-logo {
+  filter: invert(1) hue-rotate(150deg) contrast(1.5);
+  mix-blend-mode: screen;
+}
+
 * {
   box-sizing: border-box;
 }
