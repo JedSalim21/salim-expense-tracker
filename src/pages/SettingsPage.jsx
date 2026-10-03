@@ -5,7 +5,7 @@ import {
   FiRefreshCcw,
   FiSun,
 } from "react-icons/fi";
-import SidebarNav from "../components/SidebarNav";
+import PageLayout from "../components/PageLayout";
 import { CURRENCY_OPTIONS } from "../lib/settings";
 
 const themeOptions = [
@@ -37,18 +37,13 @@ export default function SettingsPage({
   onResetAllData,
 }) {
   return (
-    <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block max-[680px]:pb-[72px]"
-      aria-label="SalimSpend settings"
+    <PageLayout
+      ariaLabel="SalimSpend settings"
+      currentView={currentView}
+      onSelectView={onSelectView}
+      footerText="Your preferences are saved on this device."
+      footerDotClassName="bg-[#0f766e] shadow-[0_0_0_4px_rgba(15,118,110,0.15)]"
     >
-      <SidebarNav
-        currentView={currentView}
-        onSelectView={onSelectView}
-        footerText="Your preferences are saved on this device."
-        footerDotClassName="bg-[#0f766e] shadow-[0_0_0_4px_rgba(15,118,110,0.15)]"
-      />
-
-      <div className="min-w-0 px-[46px] pb-14 pt-[42px] max-[980px]:px-7 max-[980px]:pb-[46px] max-[680px]:px-[18px] max-[680px]:pb-[38px] max-[680px]:pt-7">
         <header className="mb-[24px] flex flex-wrap items-start justify-between gap-4 max-[860px]:flex-col max-[860px]:items-start max-[680px]:mb-6">
           <div className="min-w-0">
             <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
@@ -228,7 +223,6 @@ export default function SettingsPage({
             </div>
           </div>
         </div>
-      </div>
-    </section>
+    </PageLayout>
   );
 }

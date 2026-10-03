@@ -93,6 +93,14 @@ a {
   font: inherit;
 }
 
+header nav button:focus,
+header nav button:focus-visible,
+header nav a:focus,
+header nav a:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 #root {
   width: min(100%, 1126px);
   max-width: 100%;

@@ -1,13 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Show,
-  SignIn,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  useAuth,
-} from "@clerk/react";
-import { FiLogIn, FiUserPlus } from "react-icons/fi";
+import { Show, SignIn, UserButton, useAuth } from "@clerk/react";
 import packageJson from "../package.json";
 import {
   DEFAULT_CURRENCY,
@@ -148,26 +140,6 @@ function App() {
           className="flex min-h-10 items-center gap-[10px] max-[720px]:flex-wrap max-[720px]:justify-end"
           aria-label="Authentication"
         >
-          <Show when="signed-out">
-            <SignInButton mode="modal">
-              <button
-                type="button"
-                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-4 text-[15px] leading-none text-[var(--text-primary)] transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2"
-              >
-                <FiLogIn aria-hidden="true" />
-                Sign in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button
-                type="button"
-                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-[6px] border border-transparent bg-[var(--brand)] px-4 text-[15px] font-bold leading-none text-white transition hover:bg-[var(--brand-strong)] focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2"
-              >
-                <FiUserPlus aria-hidden="true" />
-                Sign up
-              </button>
-            </SignUpButton>
-          </Show>
           <Show when="signed-in">
             <UserButton />
           </Show>

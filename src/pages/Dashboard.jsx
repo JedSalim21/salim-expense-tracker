@@ -9,7 +9,7 @@ import {
   FiTrendingDown,
   FiTrendingUp,
 } from "react-icons/fi";
-import SidebarNav from "../components/SidebarNav";
+import PageLayout from "../components/PageLayout";
 import { loadCategories } from "../lib/categories";
 import { buildDashboardData, formatCurrency } from "../lib/reports";
 import { formatSignedCurrency } from "../lib/currency";
@@ -206,21 +206,14 @@ export default function Dashboard({
     : "conic-gradient(#e9e8e0 0 100%)";
 
   return (
-    <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block max-[680px]:pb-[72px]"
-      aria-label="SalimSpend dashboard"
+    <PageLayout
+      ariaLabel="SalimSpend dashboard"
+      currentView={currentView}
+      onSelectView={onSelectView}
+      footerText="Everything looks steady this month."
+      footerDotClassName="bg-[#e5a644] shadow-[0_0_0_4px_rgba(229,166,68,0.15)]"
+      contentId="dashboard"
     >
-      <SidebarNav
-        currentView={currentView}
-        onSelectView={onSelectView}
-        footerText="Everything looks steady this month."
-        footerDotClassName="bg-[#e5a644] shadow-[0_0_0_4px_rgba(229,166,68,0.15)]"
-      />
-
-      <div
-        className="min-w-0 px-[46px] pb-14 pt-[42px] max-[980px]:px-7 max-[980px]:pb-[46px] max-[680px]:px-[18px] max-[680px]:pb-[38px] max-[680px]:pt-7"
-        id="dashboard"
-      >
         <header className="mb-[30px] flex items-start justify-between gap-6 max-[680px]:mb-5 max-[680px]:block">
           <div className="max-[680px]:hidden">
             <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
@@ -569,7 +562,6 @@ export default function Dashboard({
             }
           </div>
         </article>
-      </div>
-    </section>
+    </PageLayout>
   );
 }

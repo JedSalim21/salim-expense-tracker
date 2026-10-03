@@ -10,7 +10,7 @@ Your responsibility is to help implement the project while preserving the projec
 
 Before making implementation decisions:
 
-1. Read `docs/overview.md`.
+1. Read `overview.md`.
 2. Read the relevant task documentation under `docs/tasks/`.
 3. Read `agent-review.md` when the task uses the project review workflow.
 4. Inspect the existing code before modifying it.

@@ -12,7 +12,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import ConfirmationModal from "../components/ConfirmationModal";
-import SidebarNav from "../components/SidebarNav";
+import EmptyState from "../components/EmptyState";
+import PageLayout from "../components/PageLayout";
 import { loadCategories } from "../lib/categories";
 import { formatSignedCurrency } from "../lib/currency";
 import { createSupabaseClient } from "../lib/supabase";
@@ -565,18 +566,13 @@ export default function TransactionsPage({
   });
 
   return (
-    <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block max-[680px]:pb-[72px]"
-      aria-label="SalimSpend transactions"
+    <PageLayout
+      ariaLabel="SalimSpend transactions"
+      currentView={currentView}
+      onSelectView={onSelectView}
+      footerText="Your transaction history is ready to review."
+      footerDotClassName="bg-[#0f766e] shadow-[0_0_0_4px_rgba(15,118,110,0.15)]"
     >
-      <SidebarNav
-        currentView={currentView}
-        onSelectView={onSelectView}
-        footerText="Your transaction history is ready to review."
-        footerDotClassName="bg-[#0f766e] shadow-[0_0_0_4px_rgba(15,118,110,0.15)]"
-      />
-
-      <div className="min-w-0 px-[46px] pb-14 pt-[42px] max-[980px]:px-7 max-[980px]:pb-[46px] max-[680px]:px-[18px] max-[680px]:pb-[38px] max-[680px]:pt-7">
         <header className="mb-[24px] flex items-start justify-between gap-6 max-[680px]:mb-6 max-[680px]:block">
           <div>
             <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
@@ -627,33 +623,28 @@ export default function TransactionsPage({
               Loading your transactions...
             </div>
           : !hasTransactions ?
-            <div className="grid min-h-[260px] place-items-center rounded-[8px] border border-dashed border-[#d7e0dc] bg-[#f8faf8] px-6 py-10 text-center">
-              <div>
-                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#edf6f1] text-[20px] text-[#0f766e]">
-                  <FiInbox aria-hidden="true" />
-                </div>
-                <h3 className="font-serif text-[26px] font-normal text-[#213b36]">
-                  No transactions yet
-                </h3>
-                <p className="mx-auto mt-2 max-w-[340px] text-center text-sm text-[#6d7974]">
-                  Add your first income or expense to start tracking your money.
+            <EmptyState icon={FiInbox}>
+              <h3 className="font-serif text-[26px] font-normal text-[#213b36]">
+                No transactions yet
+              </h3>
+              <p className="mx-auto mt-2 max-w-[340px] text-center text-sm text-[#6d7974]">
+                Add your first income or expense to start tracking your money.
+              </p>
+              {hasReferenceData ?
+                <button
+                  className="mt-5 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59]"
+                  type="button"
+                  onClick={openAddForm}
+                >
+                  <FiPlus aria-hidden="true" />
+                  Add transaction
+                </button>
+              : <p className="mt-4 text-sm text-[#6d7974]">
+                  Create at least one category and payment method before
+                  recording a transaction.
                 </p>
-                {hasReferenceData ?
-                  <button
-                    className="mt-5 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59]"
-                    type="button"
-                    onClick={openAddForm}
-                  >
-                    <FiPlus aria-hidden="true" />
-                    Add transaction
-                  </button>
-                : <p className="mt-4 text-sm text-[#6d7974]">
-                    Create at least one category and payment method before
-                    recording a transaction.
-                  </p>
-                }
-              </div>
-            </div>
+              }
+            </EmptyState>
           : <div className="overflow-hidden">
               <div className="max-[680px]:hidden">
                 <div className="min-w-0">
@@ -820,8 +811,6 @@ export default function TransactionsPage({
             </div>
           }
         </div>
-      </div>
-
       <ConfirmationModal
         isOpen={Boolean(deleteTarget)}
         title="Delete transaction?"
@@ -1350,6 +1339,6 @@ export default function TransactionsPage({
           </div>
         </div>
       : null}
-    </section>
+    </PageLayout>
   );
 }

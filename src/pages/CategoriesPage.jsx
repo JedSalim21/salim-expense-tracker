@@ -10,7 +10,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import ConfirmationModal from "../components/ConfirmationModal";
-import SidebarNav from "../components/SidebarNav";
+import EmptyState from "../components/EmptyState";
+import PageLayout from "../components/PageLayout";
 import { loadCategories } from "../lib/categories";
 import { createSupabaseClient } from "../lib/supabase";
 
@@ -213,18 +214,13 @@ export default function CategoriesPage({ currentView, onSelectView }) {
   };
 
   return (
-    <section
-      className="grid min-h-[calc(100svh-73px)] grid-cols-[216px_minmax(0,1fr)] bg-[var(--page-bg)] text-left text-[var(--text-primary)] max-[980px]:grid-cols-[176px_minmax(0,1fr)] max-[680px]:block max-[680px]:pb-[72px]"
-      aria-label="SalimSpend categories"
+    <PageLayout
+      ariaLabel="SalimSpend categories"
+      currentView={currentView}
+      onSelectView={onSelectView}
+      footerText="Your categories are organized and ready to use."
+      footerDotClassName="bg-[#0f766e] shadow-[0_0_0_4px_rgba(15,118,110,0.15)]"
     >
-      <SidebarNav
-        currentView={currentView}
-        onSelectView={onSelectView}
-        footerText="Your categories are organized and ready to use."
-        footerDotClassName="bg-[#0f766e] shadow-[0_0_0_4px_rgba(15,118,110,0.15)]"
-      />
-
-      <div className="min-w-0 px-[46px] pb-14 pt-[42px] max-[980px]:px-7 max-[980px]:pb-[46px] max-[680px]:px-[18px] max-[680px]:pb-[38px] max-[680px]:pt-7">
         <header className="mb-[24px] flex flex-wrap items-start justify-between gap-4 max-[860px]:flex-col max-[860px]:items-start max-[680px]:mb-6">
           <div className="min-w-0">
             <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
@@ -260,28 +256,23 @@ export default function CategoriesPage({ currentView, onSelectView }) {
               Loading your categories...
             </div>
           : categories.length === 0 ?
-            <div className="grid min-h-[260px] place-items-center rounded-[8px] border border-dashed border-[#d7e0dc] bg-[#f8faf8] px-6 py-10 text-center">
-              <div>
-                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#edf6f1] text-[20px] text-[#0f766e]">
-                  <FiFolderPlus aria-hidden="true" />
-                </div>
-                <h2 className="font-serif text-[26px] font-normal text-[var(--text-heading)]">
-                  No categories yet
-                </h2>
-                <p className="mt-2 max-w-[360px] text-sm text-[var(--text-secondary)]">
-                  Create your first category to begin organizing income and
-                  spending.
-                </p>
-                <button
-                  className="mt-5 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59]"
-                  type="button"
-                  onClick={openAddForm}
-                >
-                  <FiPlus aria-hidden="true" />
-                  Add category
-                </button>
-              </div>
-            </div>
+            <EmptyState icon={FiFolderPlus}>
+              <h2 className="font-serif text-[26px] font-normal text-[var(--text-heading)]">
+                No categories yet
+              </h2>
+              <p className="mt-2 max-w-[360px] text-sm text-[var(--text-secondary)]">
+                Create your first category to begin organizing income and
+                spending.
+              </p>
+              <button
+                className="mt-5 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white transition hover:bg-[#115e59]"
+                type="button"
+                onClick={openAddForm}
+              >
+                <FiPlus aria-hidden="true" />
+                Add category
+              </button>
+            </EmptyState>
           : <div className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-3">
               {categories.map((category) => (
                 <article
@@ -339,8 +330,6 @@ export default function CategoriesPage({ currentView, onSelectView }) {
             </div>
           }
         </div>
-      </div>
-
       <ConfirmationModal
         isOpen={Boolean(confirmationState)}
         title={confirmationState?.title ?? "Confirm action"}
@@ -477,6 +466,6 @@ export default function CategoriesPage({ currentView, onSelectView }) {
           </div>
         </div>
       : null}
-    </section>
+    </PageLayout>
   );
 }
