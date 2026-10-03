@@ -6965,3 +6965,255 @@ The Dashboard must preserve:
 - **Dashboard / Transactions / More** mobile navigation
 
 The provided image is used **only as a mobile viewport reference**, not as a replacement for the existing Dashboard design.
+
+# Task 020 — Global Dynamic User Timezone
+
+## Status
+
+**APPROVED**
+
+---
+
+## Goal
+
+Make SalimSpend's date and time behavior dynamically follow the **user's own local timezone** across the application.
+
+The application must not assume, hardcode, or depend on a specific country or timezone.
+
+Date and time behavior should automatically adapt to the timezone configured by the user's browser/device.
+
+---
+
+## Current Context
+
+SalimSpend currently contains date/time behavior across multiple parts of the application, including:
+
+- Dashboard
+- Transactions
+- Reports
+- Categories
+
+Some date/time logic may currently depend on local/server defaults, fixed timezone assumptions, or duplicated date calculations.
+
+Task 020 will inspect and standardize this behavior so user-local dates and times are handled consistently throughout the application.
+
+The Chicago timezone is only an example of a different timezone. The actual requirement is **global timezone support for any user timezone**.
+
+---
+
+## Scope
+
+### 1. Dashboard
+
+Review all date-dependent behavior, including:
+
+- Current date
+- Current period
+- Date-based summaries
+- Date labels
+- Any date calculations used by dashboard statistics
+
+Dashboard date calculations must use the user's local timezone.
+
+---
+
+### 2. Transactions
+
+Review:
+
+- New transaction default date/time
+- Transaction date/time display
+- Date formatting
+- Date-based filtering
+- Date-based sorting where applicable
+
+When creating a transaction, the current date/time should be based on the user's local timezone.
+
+Existing transaction timestamps must remain valid and must not be rewritten simply because the user's timezone changes.
+
+---
+
+### 3. Reports
+
+Review all date-range and period calculations, including:
+
+- Today
+- This week
+- This month
+- This year
+- Custom date ranges
+- Date filtering
+- Report date labels
+
+These periods must be calculated according to the user's local calendar/timezone.
+
+For example, "Today" should represent the current calendar day according to the user's timezone—not according to a fixed application timezone.
+
+---
+
+### 4. Categories
+
+Inspect category-related date/time behavior.
+
+If Categories contains date-dependent UI or calculations, ensure they also follow the user's local timezone.
+
+Do not introduce unnecessary date/time functionality if none currently exists.
+
+---
+
+## Timezone Detection
+
+The browser/device timezone should be used as the source of the user's local timezone.
+
+The implementation may use the browser's IANA timezone information:
+
+```js
+Intl.DateTimeFormat().resolvedOptions().timeZone;
+```
+
+The implementation must support **any valid user timezone**, not a predefined list of countries.
+
+Do not hardcode:
+
+- `Asia/Manila`
+- `America/Chicago`
+- `UTC`
+- Any fixed UTC offset
+- Any other specific timezone as the application's default user timezone
+
+---
+
+## Data & Storage
+
+Preserve transaction timestamps in a timezone-safe representation.
+
+The stored timestamp should represent the actual point in time.
+
+When displaying or calculating dates for the user, convert/use the timestamp according to the user's current local timezone.
+
+Pay particular attention to the existing transaction fields:
+
+- `occurred_at`
+- `date`
+
+Do not change the database schema unless inspection proves that it is required.
+
+Do not rewrite historical transaction timestamps when the user's timezone changes.
+
+---
+
+## Implementation Approach
+
+Before implementing:
+
+1. Inspect the existing date/time logic across Dashboard, Transactions, Reports, and Categories.
+2. Identify all date/time formatting functions.
+3. Identify all current-date generation logic.
+4. Identify all date-range calculations.
+5. Identify any fixed timezone or UTC assumptions.
+6. Identify duplicated date/time logic.
+7. Determine the smallest safe implementation approach.
+
+If multiple areas contain duplicated date/time logic, a shared date/time utility may be introduced **only when it provides genuine reuse and improves consistency**.
+
+Do not create unnecessary abstractions.
+
+---
+
+## Constraints
+
+- Keep the existing UI and design unchanged.
+- Do not redesign Dashboard, Transactions, Reports, or Categories.
+- Do not modify authentication.
+- Do not modify Clerk configuration.
+- Do not modify Supabase RLS.
+- Do not modify currency functionality.
+- Do not introduce a manual timezone selector.
+- Do not change the database schema unless technically necessary.
+- Do not rewrite historical transaction timestamps.
+- Do not add unrelated refactors.
+- Do not modify unrelated functionality.
+- Follow the existing SalimSpend architecture and coding conventions.
+- Do not commit or push changes.
+
+---
+
+## Verification Scenarios
+
+The implementation should be tested using multiple timezone environments rather than only the developer's current timezone.
+
+At minimum, verify behavior across different timezone offsets and date boundaries.
+
+Examples may include:
+
+- A positive UTC offset timezone
+- A negative UTC offset timezone
+- A timezone near UTC
+- A timezone where the local calendar date differs from another timezone
+
+The examples are for verification only. The implementation must remain generic and support any valid browser timezone.
+
+---
+
+## Expected Result
+
+SalimSpend becomes **globally timezone-aware**.
+
+A user can access the application from any timezone and the application's date/time behavior will automatically follow that user's local browser/device timezone.
+
+Dashboard, Transactions, Reports, and relevant Categories behavior should remain consistent with the user's local calendar and time without requiring manual timezone configuration.
+
+---
+
+## Out of Scope
+
+Task 020 does not include:
+
+- Timezone settings UI
+- Manual timezone selection
+- User profile timezone preferences
+- Database schema redesign
+- Currency changes
+- UI redesign
+- Authentication changes
+- Unrelated code refactoring
+
+---
+
+## Agent Instructions
+
+Before implementation:
+
+1. Read `AGENT.md`.
+2. Read `SKILLS.md`.
+3. Read `overview.md`.
+4. Read `spec.md`.
+5. Read `agent-review.md`.
+6. Review the relevant existing source files.
+7. Inspect the current date/time implementation.
+8. Identify the smallest safe implementation approach.
+9. Present the implementation proposal before making changes.
+
+**Do not implement until the proposal has been explicitly approved.**
+
+After implementation:
+
+- Report all changed files.
+- Explain what changed in each file.
+- Explain why each change was necessary.
+- Report verification results.
+- Report any assumptions or remaining concerns.
+- Do not commit or push.
+
+---
+
+## Documentation Change Reporting
+
+If any `.md` file is created or modified during Task 020, explicitly report:
+
+- File
+- Change
+- Reason
+- Impact
+
+No documentation changes should be made unless they are necessary for Task 020.

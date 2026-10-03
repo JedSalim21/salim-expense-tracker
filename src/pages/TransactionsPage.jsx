@@ -17,6 +17,7 @@ import PageLayout from "../components/PageLayout";
 import { loadCategories } from "../lib/categories";
 import { formatSignedCurrency } from "../lib/currency";
 import { createSupabaseClient } from "../lib/supabase";
+import { getUserTimeZone } from "../lib/timezone";
 
 const emptyFormState = {
   description: "",
@@ -91,6 +92,7 @@ const formatDate = (value) => {
   }
 
   return new Intl.DateTimeFormat("en-GB", {
+    timeZone: getUserTimeZone(),
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -122,11 +124,12 @@ const dateToDateTimeValue = (date) =>
   `${date.getFullYear()}-${twoDigitPart(date.getMonth() + 1)}-${twoDigitPart(date.getDate())}`;
 
 const formatPickerDate = (date) =>
-  date.toLocaleDateString("en-US", {
+  new Intl.DateTimeFormat("en-US", {
+    timeZone: getUserTimeZone(),
     month: "short",
     day: "numeric",
     year: "numeric",
-  });
+  }).format(date);
 
 const normalizeTransaction = (record) => ({
   id: record.id,

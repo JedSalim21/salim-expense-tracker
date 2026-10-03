@@ -14,6 +14,10 @@ import { loadCategories } from "../lib/categories";
 import { buildDashboardData, formatCurrency } from "../lib/reports";
 import { formatSignedCurrency } from "../lib/currency";
 import { createSupabaseClient } from "../lib/supabase";
+import {
+  formatDashboardDateLabel,
+  getGreetingForDate,
+} from "../lib/timezone";
 
 const toneClasses = {
   teal: "text-[var(--brand)]",
@@ -158,6 +162,9 @@ export default function Dashboard({
     transactionsRevision,
   ]);
 
+  const currentDateLabel = formatDashboardDateLabel(new Date());
+  const currentGreeting = getGreetingForDate(new Date());
+
   const summaryCards = [
     {
       label: "Income",
@@ -217,13 +224,13 @@ export default function Dashboard({
         <header className="mb-[30px] flex items-start justify-between gap-6 max-[680px]:mb-5 max-[680px]:block">
           <div className="max-[680px]:hidden">
             <p className="block text-[11px] font-extrabold uppercase tracking-[0.12em] leading-[1.2] text-[var(--text-muted)]">
-              Monday, September 23, 2026
+              {currentDateLabel}
             </p>
             <h1 className="my-2 font-serif text-[clamp(32px,4vw,48px)] font-normal leading-[1.03] text-[var(--text-heading)]">
-              Good morning, Salim.
+              {currentGreeting}, Salim.
             </h1>
             <p className="text-sm text-[var(--text-secondary)]">
-              Here is the shape of your money this month.
+              Here is the shape of your money this {selectedPeriod}.
             </p>
           </div>
           <h1 className="hidden font-serif text-[clamp(34px,7vw,42px)] font-normal leading-[1.03] text-[var(--text-heading)] max-[680px]:mt-0 max-[680px]:mb-4 max-[680px]:block">

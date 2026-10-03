@@ -2,6 +2,7 @@ import {
   formatCurrency as formatCurrencyValue,
   formatSignedCurrency as formatSignedCurrencyValue,
 } from "./currency.js";
+import { getUserTimeZone } from "./timezone.js";
 
 const defaultCategoryPalette = [
   "#0f766e",
@@ -140,9 +141,10 @@ function buildMonthlyTrend(transactions, asOfDate = new Date(), months = 6) {
     const monthKey = getMonthKey(monthDate);
     const value = monthlyTotals.get(monthKey) || 0;
     orderedEntries.push({
-      month: new Intl.DateTimeFormat("en-US", { month: "short" }).format(
-        monthDate,
-      ),
+      month: new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        timeZone: getUserTimeZone(),
+      }).format(monthDate),
       value: Math.abs(value),
     });
   }
