@@ -11,15 +11,21 @@ import {
   FiTrendingDown,
   FiTrendingUp,
 } from "react-icons/fi";
+import CustomDateRangeFields from "../components/CustomDateRangeFields";
 import PageLayout from "../components/PageLayout";
 import { loadCategories } from "../lib/categories";
 import { createSupabaseClient } from "../lib/supabase";
 import {
   calculateReportMetrics,
   formatCurrency,
+  getCustomDateRangeError,
   formatReportInsight,
   formatSignedCurrency,
 } from "../lib/reports";
+import {
+  formatDateInputValue,
+  formatDateInUserTimeZone,
+} from "../lib/timezone";
 
 const emptyReportMetrics = {
   summary: {
@@ -58,6 +64,10 @@ export default function ReportsPage({
   }, [getToken, isLoaded, isSignedIn]);
 
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const [customDateRange, setCustomDateRange] = useState(() => {
+    const today = formatDateInputValue();
+    return { start: today, end: today };
+  });
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const [reportMetrics, setReportMetrics] = useState(emptyReportMetrics);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,13 +78,24 @@ export default function ReportsPage({
     { value: "week", label: "This week" },
     { value: "month", label: "This month" },
     { value: "year", label: "This year" },
+    { value: "custom", label: "Custom Date Range" },
   ];
+  const customRangeError =
+    selectedPeriod === "custom" ?
+      getCustomDateRangeError(customDateRange.start, customDateRange.end)
+    : "";
   const selectedPeriodLabel =
     periodOptions.find((option) => option.value === selectedPeriod)?.label ??
     "This month";
 
   useEffect(() => {
     let isActive = true;
+
+    if (selectedPeriod === "custom" && customRangeError) {
+      return () => {
+        isActive = false;
+      };
+    }
 
     const loadReportData = async () => {
       if (!isLoaded || !isSignedIn || !user?.id || !supabase) {
@@ -120,6 +141,7 @@ export default function ReportsPage({
         setReportMetrics(
           calculateReportMetrics(normalizedTransactions, categoryRows, {
             period: selectedPeriod,
+            dateRange: customDateRange,
           }),
         );
       } catch (error) {
@@ -147,25 +169,30 @@ export default function ReportsPage({
     supabase,
     user?.id,
     selectedPeriod,
+    customDateRange,
+    customRangeError,
     transactionsRevision,
   ]);
 
+  const visibleReportMetrics =
+    customRangeError ? emptyReportMetrics : reportMetrics;
+  const isCurrentRangeLoading = isLoading && !customRangeError;
   const summaryData = [
     {
       label: "Net cash flow",
       value:
-        isLoading ? "—" : (
-          formatSignedCurrency(reportMetrics.summary.netCashFlow, currency)
+        isCurrentRangeLoading ? "—" : (
+          formatSignedCurrency(visibleReportMetrics.summary.netCashFlow, currency)
         ),
-      trend: reportMetrics.summary.netCashFlow >= 0 ? "Healthy" : "Tight",
+      trend: visibleReportMetrics.summary.netCashFlow >= 0 ? "Healthy" : "Tight",
       icon: FiArrowUpRight,
       tone: "teal",
     },
     {
       label: "Income",
       value:
-        isLoading ? "—" : (
-          formatCurrency(reportMetrics.summary.totalIncome, currency)
+        isCurrentRangeLoading ? "—" : (
+          formatCurrency(visibleReportMetrics.summary.totalIncome, currency)
         ),
       trend: selectedPeriodLabel,
       icon: FiTrendingUp,
@@ -174,8 +201,8 @@ export default function ReportsPage({
     {
       label: "Expenses",
       value:
-        isLoading ? "—" : (
-          formatCurrency(reportMetrics.summary.totalExpenses, currency)
+        isCurrentRangeLoading ? "—" : (
+          formatCurrency(visibleReportMetrics.summary.totalExpenses, currency)
         ),
       trend: selectedPeriodLabel,
       icon: FiTrendingDown,
@@ -184,20 +211,36 @@ export default function ReportsPage({
     {
       label: "Savings rate",
       value:
-        isLoading ? "—" : `${reportMetrics.summary.savingsRate.toFixed(1)}%`,
-      trend: reportMetrics.summary.savingsRate >= 0 ? "Positive" : "Negative",
+        isCurrentRangeLoading ? "—" : `${visibleReportMetrics.summary.savingsRate.toFixed(1)}%`,
+      trend: visibleReportMetrics.summary.savingsRate >= 0 ? "Positive" : "Negative",
       icon: FiDollarSign,
       tone: "rose",
     },
   ];
 
-  const monthlyTrend = reportMetrics.monthlyTrend;
-  const categoryBreakdown = reportMetrics.categoryBreakdown;
-  const topCategories = reportMetrics.topCategories;
+  const monthlyTrend = visibleReportMetrics.monthlyTrend;
+  const categoryBreakdown = visibleReportMetrics.categoryBreakdown;
+  const topCategories = visibleReportMetrics.topCategories;
   const recentInsights =
-    reportMetrics.insights.length > 0 ?
-      reportMetrics.insights
+    visibleReportMetrics.insights.length > 0 ?
+      visibleReportMetrics.insights
     : [{ type: "empty" }];
+  const trendTitle =
+    selectedPeriod === "day" ? "Daily spending" :
+    selectedPeriod === "week" ? "Weekly spending" :
+    selectedPeriod === "year" ? "Yearly spending" :
+    selectedPeriod === "custom" ? "Custom date-range spending" :
+    "Monthly spending";
+  const customRangeLabel =
+    selectedPeriod === "custom" && !customRangeError ?
+      `${formatDateInUserTimeZone(new Date(`${customDateRange.start}T12:00:00`), { month: "short", day: "numeric", year: "numeric" })} → ${formatDateInUserTimeZone(new Date(`${customDateRange.end}T12:00:00`), { month: "short", day: "numeric", year: "numeric" })}`
+    : "Custom Date Range";
+  const trendViewLabel =
+    selectedPeriod === "day" ? "24H view" :
+    selectedPeriod === "week" ? "7D view" :
+    selectedPeriod === "year" ? "Year view" :
+    selectedPeriod === "custom" ? customRangeLabel :
+    "Monthly view";
 
   const maxMonthlyValue =
     Math.max(...monthlyTrend.map((entry) => Number(entry.value) || 0), 0) || 1;
@@ -268,10 +311,21 @@ export default function ReportsPage({
           </div>
         </header>
 
-        {errorMessage ?
-          <div className="mb-4 rounded-[6px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
+        {errorMessage || customRangeError ?
+          <div
+            className="mb-4 rounded-[6px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
+            {customRangeError || errorMessage}
           </div>
+        : null}
+
+        {selectedPeriod === "custom" ?
+          <CustomDateRangeFields
+            dateRange={customDateRange}
+            onChange={setCustomDateRange}
+            error={customRangeError}
+          />
         : null}
 
         <div className="mb-[14px] grid grid-cols-4 gap-3 max-[980px]:grid-cols-2 max-[680px]:gap-2">
@@ -307,18 +361,18 @@ export default function ReportsPage({
                   Spend trend
                 </p>
                 <h2 className="mt-1.5 font-serif text-[22px] font-normal text-[var(--text-heading)]">
-                  Monthly spending
+                  {trendTitle}
                 </h2>
               </div>
               <span className="inline-flex items-center gap-2 text-[11px] font-bold text-[var(--brand)]">
                 <FiBarChart2 aria-hidden="true" />
-                6M view
+                {trendViewLabel}
               </span>
             </div>
 
             {monthlyTrend.length === 0 ?
               <div className="mt-6 rounded-[8px] border border-dashed border-[var(--border)] bg-[var(--panel-soft)] p-5 text-sm text-[var(--text-secondary)]">
-                {isLoading ?
+                {isCurrentRangeLoading ?
                   "Loading transactions..."
                 : "No transaction data yet for this period."}
               </div>
@@ -366,7 +420,7 @@ export default function ReportsPage({
 
             {categoryBreakdown.length === 0 ?
               <div className="mt-5 text-sm text-[var(--text-secondary)]">
-                {isLoading ?
+                {isCurrentRangeLoading ?
                   "Loading category totals..."
                 : "No category activity available yet."}
               </div>
@@ -419,7 +473,7 @@ export default function ReportsPage({
 
             {topCategories.length === 0 ?
               <div className="mt-4 text-sm text-[var(--text-secondary)]">
-                {isLoading ? "Loading spend areas..." : "No categories yet."}
+                {isCurrentRangeLoading ? "Loading spend areas..." : "No categories yet."}
               </div>
             : <div className="mt-4 space-y-3">
                 {topCategories.map((item) => (

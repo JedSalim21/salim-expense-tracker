@@ -7217,3 +7217,342 @@ If any `.md` file is created or modified during Task 020, explicitly report:
 - Impact
 
 No documentation changes should be made unless they are necessary for Task 020.
+
+# Task 021 — Activity Period Sync for Cash Flow & Spend Trend
+
+## Status
+
+**APPROVED**
+
+---
+
+## Goal
+
+Fix the activity period behavior for the Dashboard and Reports charts so that the chart data and displayed time range correctly update when the user switches between different activity periods.
+
+The following sections must respond to the selected activity period:
+
+- Dashboard → **Cash Flow**
+- Reports → **Spend Trend**
+
+The charts should no longer remain locked to the default/current-month data when the user selects another period.
+
+---
+
+## Current Context
+
+SalimSpend already provides activity/date period options such as:
+
+- This day
+- This week
+- This month
+- This year
+
+The selected activity period currently affects some parts of the Dashboard and Reports data, but the following chart sections do not fully update when the period changes:
+
+### Dashboard
+
+**Cash Flow**
+
+Desktop view currently does not correctly refresh its chart data when the activity period changes.
+
+### Reports
+
+**Spend Trend**
+
+Both desktop and mobile views currently do not correctly refresh the chart data when the activity period changes.
+
+---
+
+## Scope
+
+### 1. Dashboard — Cash Flow
+
+Make the **Cash Flow** section respond to the currently selected activity period.
+
+When the user changes the activity period:
+
+- Chart data must update.
+- Chart labels must update.
+- Date range must update.
+- Relevant income/expense values must update.
+- The chart must represent only transactions within the selected period.
+
+Examples:
+
+**This day**
+
+→ Show cash flow for the current local calendar day.
+
+**This week**
+
+→ Show cash flow for the current local week.
+
+**This month**
+
+→ Show cash flow for the current local month.
+
+**This year**
+
+→ Show cash flow for the current local year.
+
+The existing Dashboard activity selector should remain the source of truth.
+
+---
+
+### 2. Reports — Spend Trend
+
+Make the **Spend Trend** section respond to the currently selected report/activity period.
+
+When the user changes the selected period:
+
+- Chart data must update.
+- Chart labels must update.
+- Date range must update.
+- Spending values must update.
+- The chart must use transactions belonging to the selected period.
+
+This must work in:
+
+- Desktop view
+- Mobile view
+
+The existing Reports period selector should remain the source of truth.
+
+---
+
+## Important Timezone Requirement
+
+Task 020 established global user-local timezone behavior.
+
+Task 021 must preserve that behavior.
+
+All period calculations must continue using the user's current browser/device timezone.
+
+For example, "Today" means the user's current local calendar day.
+
+Do not introduce a fixed timezone or hardcode any country timezone.
+
+Do not regress the Task 020 implementation.
+
+---
+
+## Implementation Approach
+
+Before implementation:
+
+1. Inspect the Dashboard activity selector.
+2. Inspect the Dashboard `Cash Flow` implementation.
+3. Inspect the Reports activity/period selector.
+4. Inspect the Reports `Spend Trend` implementation.
+5. Trace how the selected period is currently passed into data queries/calculations.
+6. Determine why the charts are not updating.
+7. Check whether the chart data is:
+   - using stale state,
+   - using a hardcoded period,
+   - calculated independently from the selector,
+   - memoized with incomplete dependencies,
+   - or using a separate date-range calculation.
+
+8. Determine the smallest safe fix.
+
+Do not rewrite the chart system unless inspection proves it is necessary.
+
+---
+
+## Data Behavior
+
+The selected period must control the transaction data used by the charts.
+
+The implementation should ensure that:
+
+```text
+Selected Activity Period
+        ↓
+Date Range Calculation
+        ↓
+Transaction Data / Filter
+        ↓
+Chart Data
+        ↓
+Chart Labels + Values
+```
+
+Changing the activity period should cause the relevant chart data to recalculate.
+
+Avoid maintaining duplicate independent period states when the existing selector can be reused.
+
+---
+
+## Chart Behavior
+
+### This Day
+
+Display data relevant to the current local day.
+
+### This Week
+
+Display data relevant to the current local week.
+
+The existing application's definition of the week should be preserved unless inspection identifies an existing inconsistency.
+
+### This Month
+
+Display data relevant to the current local month.
+
+### This Year
+
+Display data relevant to the current local year.
+
+The chart's granularity may remain appropriate to the selected period.
+
+For example, a yearly chart may use monthly aggregation rather than attempting to display every individual transaction.
+
+Do not redesign the existing chart visualization unless required to correctly represent the selected period.
+
+---
+
+## UI Requirements
+
+Keep the existing:
+
+- Activity selector
+- Chart design
+- Chart styling
+- Layout
+- Responsive behavior
+- Labels and visual hierarchy
+
+The task is primarily a **data synchronization/behavior fix**, not a visual redesign.
+
+Do not introduce a new period selector if an existing selector can be reused.
+
+---
+
+## Constraints
+
+- Do not redesign Dashboard.
+- Do not redesign Reports.
+- Do not replace the chart library/component unless absolutely necessary.
+- Do not change the existing chart visual design unnecessarily.
+- Do not modify authentication.
+- Do not modify Clerk.
+- Do not modify Supabase RLS.
+- Do not modify currency behavior.
+- Do not change Task 020 timezone behavior.
+- Do not change transaction schema unless technically required.
+- Do not add unrelated refactors.
+- Do not modify unrelated pages.
+- Do not commit or push changes.
+
+---
+
+## Verification
+
+Test each activity period individually:
+
+1. Select **This day**
+2. Verify Cash Flow and Spend Trend.
+3. Select **This week**
+4. Verify both charts update.
+5. Select **This month**
+6. Verify both charts update.
+7. Select **This year**
+8. Verify both charts update.
+
+Also verify transitions such as:
+
+```text
+Month → Day
+Day → Week
+Week → Year
+Year → Month
+```
+
+The chart should refresh correctly every time the selected period changes.
+
+Verify both:
+
+- Desktop
+- Mobile
+
+for the Reports Spend Trend chart.
+
+---
+
+## Expected Result
+
+The activity selector should become the effective source of truth for the affected charts.
+
+When the user changes:
+
+**This month → This day → This week → This year**
+
+the following sections should immediately represent the newly selected period:
+
+**Dashboard**
+
+- Cash Flow
+
+**Reports**
+
+- Spend Trend
+
+The chart data, labels, aggregation, and date boundaries should all correspond to the selected period while preserving the global timezone behavior established in Task 020.
+
+---
+
+## Out of Scope
+
+Task 021 does not include:
+
+- New chart designs
+- New chart libraries
+- New dashboard sections
+- New report sections
+- New filters unrelated to the existing activity selector
+- Manual timezone settings
+- Database schema redesign
+- Authentication changes
+- Currency changes
+- General UI redesign
+
+---
+
+## Agent Instructions
+
+Before implementation:
+
+1. Read `AGENT.md`.
+2. Read `SKILLS.md`.
+3. Read `overview.md`.
+4. Read `spec.md`.
+5. Read `agent-review.md`.
+6. Review the relevant existing Dashboard and Reports code.
+7. Trace the current activity period state and chart data flow.
+8. Identify the root cause of the stale chart behavior.
+9. Present the implementation proposal before making changes.
+
+**Do not implement until the proposal has been explicitly approved.**
+
+After implementation:
+
+- Report all changed files.
+- Explain what changed in each file.
+- Explain why each change was necessary.
+- Report verification results.
+- Report any assumptions or remaining concerns.
+- Do not commit or push.
+
+---
+
+## Documentation Change Reporting
+
+If any `.md` file is created or modified during Task 021, explicitly report:
+
+- File
+- Change
+- Reason
+- Impact
+
+No documentation changes should be made unless they are necessary for Task 021.

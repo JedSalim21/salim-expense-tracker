@@ -9,13 +9,20 @@ import {
   FiTrendingDown,
   FiTrendingUp,
 } from "react-icons/fi";
+import CustomDateRangeFields from "../components/CustomDateRangeFields";
 import PageLayout from "../components/PageLayout";
 import { loadCategories } from "../lib/categories";
-import { buildDashboardData, formatCurrency } from "../lib/reports";
+import {
+  buildDashboardData,
+  formatCurrency,
+  getCustomDateRangeError,
+} from "../lib/reports";
 import { formatSignedCurrency } from "../lib/currency";
 import { createSupabaseClient } from "../lib/supabase";
 import {
   formatDashboardDateLabel,
+  formatDateInputValue,
+  formatDateInUserTimeZone,
   getGreetingForDate,
 } from "../lib/timezone";
 
@@ -32,15 +39,6 @@ const summaryIcons = {
   amber: FiTrendingDown,
   rose: FiCreditCard,
 };
-
-const cashFlow = [
-  { month: "Apr", income: 63, expenses: 36 },
-  { month: "May", income: 72, expenses: 42 },
-  { month: "Jun", income: 57, expenses: 35 },
-  { month: "Jul", income: 82, expenses: 46 },
-  { month: "Aug", income: 68, expenses: 40 },
-  { month: "Sep", income: 88, expenses: 44 },
-];
 
 const emptyDashboardData = {
   summary: {
@@ -69,22 +67,38 @@ export default function Dashboard({
   }, [getToken, isLoaded, isSignedIn]);
 
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const [customDateRange, setCustomDateRange] = useState(() => {
+    const today = formatDateInputValue();
+    return { start: today, end: today };
+  });
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState(emptyDashboardData);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   const periodOptions = [
+    { value: "day", label: "This day" },
     { value: "week", label: "This week" },
     { value: "month", label: "This month" },
     { value: "year", label: "This year" },
+    { value: "custom", label: "Custom Date Range" },
   ];
+  const customRangeError =
+    selectedPeriod === "custom" ?
+      getCustomDateRangeError(customDateRange.start, customDateRange.end)
+    : "";
   const selectedPeriodLabel =
     periodOptions.find((option) => option.value === selectedPeriod)?.label ??
     "This month";
 
   useEffect(() => {
     let isActive = true;
+
+    if (selectedPeriod === "custom" && customRangeError) {
+      return () => {
+        isActive = false;
+      };
+    }
 
     const loadDashboardData = async () => {
       if (!isLoaded || !isSignedIn || !user?.id || !supabase) {
@@ -132,6 +146,7 @@ export default function Dashboard({
         setDashboardData(
           buildDashboardData(normalizedTransactions, categoryRows, {
             period: selectedPeriod,
+            dateRange: customDateRange,
           }),
         );
       } catch (error) {
@@ -159,43 +174,68 @@ export default function Dashboard({
     supabase,
     user?.id,
     selectedPeriod,
+    customDateRange,
+    customRangeError,
     transactionsRevision,
   ]);
 
+  const visibleDashboardData =
+    customRangeError ? emptyDashboardData : dashboardData;
+  const isCurrentRangeLoading = isLoading && !customRangeError;
   const currentDateLabel = formatDashboardDateLabel(new Date());
   const currentGreeting = getGreetingForDate(new Date());
 
   const summaryCards = [
     {
       label: "Income",
-      value: dashboardData.summary.incomeTotal,
+      value: visibleDashboardData.summary.incomeTotal,
       detail: `${selectedPeriodLabel} income`,
       tone: "blue",
     },
     {
       label: "Expenses",
-      value: dashboardData.summary.expensesTotal,
+      value: visibleDashboardData.summary.expensesTotal,
       detail: `${selectedPeriodLabel} spending`,
       tone: "amber",
     },
     {
       label: "Current balance",
-      value: dashboardData.summary.balance,
+      value: visibleDashboardData.summary.balance,
       detail: `${selectedPeriodLabel} net cash flow`,
       tone: "teal",
     },
     {
       label: "Transactions",
-      value: dashboardData.recentTransactions.length,
+      value: visibleDashboardData.recentTransactions.length,
       detail: `${selectedPeriodLabel} activity`,
       tone: "rose",
     },
   ];
 
-  const activeExpenseBreakdown = dashboardData.categoryBreakdown;
+  const chartRangeLabel =
+    selectedPeriod === "custom" && !customRangeError ?
+      `${formatDateInUserTimeZone(new Date(`${customDateRange.start}T12:00:00`), { month: "short", day: "numeric", year: "numeric" })} → ${formatDateInUserTimeZone(new Date(`${customDateRange.end}T12:00:00`), { month: "short", day: "numeric", year: "numeric" })}`
+    : selectedPeriod === "week" ? "This week"
+    : selectedPeriod === "month" ? "This month"
+    : selectedPeriod === "year" ? "This year"
+    : selectedPeriod === "day" ? "Today"
+    : "Custom Date Range";
+  const cashFlowData = Array.isArray(visibleDashboardData.cashFlow) ?
+    visibleDashboardData.cashFlow
+  : [];
+  const maxCashFlowValue =
+    Math.max(
+      ...cashFlowData.flatMap((entry) => [
+        Number(entry.income) || 0,
+        Number(entry.expenses) || 0,
+      ]),
+      0,
+    ) || 1;
+
+  const activeExpenseBreakdown = visibleDashboardData.categoryBreakdown;
   const savingsPercent =
-    dashboardData.summary.incomeTotal > 0 ?
-      (dashboardData.summary.balance / dashboardData.summary.incomeTotal) * 100
+    visibleDashboardData.summary.incomeTotal > 0 ?
+      (visibleDashboardData.summary.balance / visibleDashboardData.summary.incomeTotal) * 100
     : 0;
   const chartBackground =
     activeExpenseBreakdown.length > 0 ?
@@ -240,7 +280,7 @@ export default function Dashboard({
           <div className="relative max-[680px]:hidden max-[680px]:mt-0 max-[680px]:w-full">
             <button
               aria-expanded={isPeriodMenuOpen}
-              className="mt-0 inline-flex min-h-[38px] items-center gap-[8px] whitespace-nowrap rounded-[5px] border border-transparent bg-[var(--brand)] px-3 text-xs font-bold text-white transition hover:bg-[var(--brand-strong)] focus-visible:outline-2 focus-visible:outline-[var(--brand)] focus-visible:outline-offset-2 max-[680px]:w-full max-[680px]:justify-between max-[680px]:px-4"
+              className="mt-2 inline-flex min-h-[38px] items-center gap-[8px] whitespace-nowrap rounded-[5px] border border-transparent bg-[#0f766e] px-3 text-xs font-bold text-white transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2 max-[680px]:w-full max-[680px]:justify-between max-[680px]:px-4"
               type="button"
               onClick={() =>
                 setIsPeriodMenuOpen((currentState) => !currentState)
@@ -269,12 +309,67 @@ export default function Dashboard({
               </div>
             : null}
           </div>
+          <div className="relative hidden max-[680px]:block">
+            <button
+              aria-expanded={isPeriodMenuOpen}
+              aria-label="Select dashboard period"
+              className="inline-flex min-h-[42px] items-center justify-between gap-2 rounded-[6px] border border-transparent bg-[#0f766e] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#115e59] focus-visible:outline-2 focus-visible:outline-[#0f766e] focus-visible:outline-offset-2"
+              type="button"
+              onClick={() =>
+                setIsPeriodMenuOpen((currentState) => !currentState)
+              }
+            >
+              <span className="inline-flex items-center gap-2">
+                <FiCalendar aria-hidden="true" />
+                {selectedPeriodLabel}
+              </span>
+              <FiChevronDown aria-hidden="true" />
+            </button>
+            {isPeriodMenuOpen ?
+              <div
+                className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-[180px] overflow-hidden rounded-[8px] border border-[var(--border)] bg-[var(--surface)] shadow-[0_14px_30px_rgba(15,23,42,0.12)]"
+              >
+                {periodOptions.map((option) => {
+                  const isSelected = option.value === selectedPeriod;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-medium transition ${
+                        isSelected ?
+                          "bg-[#0f766e] text-white"
+                        : "bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--panel-soft)]"
+                      }`}
+                      onClick={() => {
+                        setSelectedPeriod(option.value);
+                        setIsPeriodMenuOpen(false);
+                      }}
+                    >
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            : null}
+          </div>
         </header>
 
-        {errorMessage ?
-          <div className="mb-4 rounded-[6px] border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
-            {errorMessage}
+        {errorMessage || customRangeError ?
+          <div
+            className="mb-4 rounded-[6px] border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]"
+            role="alert"
+          >
+            {customRangeError || errorMessage}
           </div>
+        : null}
+
+        {selectedPeriod === "custom" ?
+          <CustomDateRangeFields
+            dateRange={customDateRange}
+            onChange={setCustomDateRange}
+            error={customRangeError}
+          />
         : null}
 
         <div className="mb-[14px] grid grid-cols-4 gap-3 max-[980px]:grid-cols-2 max-[680px]:grid-cols-2 max-[680px]:gap-2">
@@ -312,7 +407,7 @@ export default function Dashboard({
               <span>Current Balance</span>
             </div>
             <div className="mt-3 font-serif text-[28px] font-normal leading-none text-[var(--text-heading)]">
-              {formatCurrency(dashboardData.summary.balance, currency)}
+              {formatCurrency(visibleDashboardData.summary.balance, currency)}
             </div>
             <div className="mt-3 h-[8px] overflow-hidden rounded-full bg-[var(--surface-soft)]">
               <span
@@ -327,18 +422,6 @@ export default function Dashboard({
             </div>
           </div>
 
-          <div className="mb-4 grid grid-cols-3 overflow-hidden rounded-[6px] border border-[var(--border)] bg-[var(--surface-alt)] p-[2px]">
-            {periodOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setSelectedPeriod(option.value)}
-                className={`min-h-[30px] rounded-[4px] text-[11px] font-bold ${selectedPeriod === option.value ? "bg-[var(--brand)] text-white" : "text-[var(--text-secondary)]"}`}
-              >
-                {option.label.replace("This ", "")}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="mb-[14px] grid grid-cols-[minmax(0,1.45fr)_minmax(300px,0.8fr)] gap-[14px] max-[980px]:grid-cols-1">
@@ -353,7 +436,7 @@ export default function Dashboard({
                 </h2>
               </div>
               <span className="text-[11px] text-[var(--text-muted)]">
-                Last 6 months
+                {chartRangeLabel}
               </span>
             </div>
             <div className="mt-3 flex justify-end gap-4 text-[11px] text-[var(--text-muted)] max-[680px]:justify-start">
@@ -366,45 +449,56 @@ export default function Dashboard({
                 Expenses
               </span>
             </div>
-            <div
-              className="mt-[18px] flex h-[204px]"
-              aria-label="Bar chart comparing income and expenses from April to September"
-            >
-              <div className="flex w-[88px] shrink-0 flex-col justify-between pb-[23px] pt-1 font-mono text-[8px] text-[#adb2aa]">
-                {[8000, 6000, 4000, 2000, 0].map((amount) => (
-                  <span key={amount}>{formatCurrency(amount, currency)}</span>
-                ))}
+            {cashFlowData.length === 0 ?
+              <div className="mt-[18px] rounded-[8px] border border-dashed border-[var(--border)] bg-[var(--panel-soft)] p-5 text-sm text-[var(--text-secondary)]">
+                No cash flow data yet for {selectedPeriodLabel.toLowerCase()}.
               </div>
-              <div className="relative grid min-w-0 flex-1 grid-cols-6 gap-[10px] border-b border-[#e4e5df]">
-                <div className="pointer-events-none absolute inset-x-0 bottom-[23px] top-0 flex flex-col justify-between">
-                  <span className="border-t border-dashed border-[#e5e6e0]"></span>
-                  <span className="border-t border-dashed border-[#e5e6e0]"></span>
-                  <span className="border-t border-dashed border-[#e5e6e0]"></span>
-                  <span className="border-t border-dashed border-[#e5e6e0]"></span>
-                  <span className="border-t border-dashed border-[#e5e6e0]"></span>
-                </div>
-                {cashFlow.map((month) => (
-                  <div
-                    className="relative z-10 flex min-w-0 flex-col justify-end"
-                    key={month.month}
-                  >
-                    <div className="flex h-[calc(100%-23px)] items-end justify-center gap-[3px]">
-                      <span
-                        className="block min-h-1 w-[min(17px,40%)] rounded-t-[3px] bg-[var(--brand)]"
-                        style={{ height: `${month.income}%` }}
-                      ></span>
-                      <span
-                        className="block min-h-1 w-[min(17px,40%)] rounded-t-[3px] bg-[var(--warning)]"
-                        style={{ height: `${month.expenses}%` }}
-                      ></span>
-                    </div>
-                    <span className="block pt-2 text-center font-mono text-[9px] text-[#9a9d95]">
-                      {month.month}
+            : <div
+                className="mt-[18px] flex h-[204px]"
+                aria-label={`Cash flow for ${selectedPeriodLabel}`}
+              >
+                <div className="flex w-[88px] shrink-0 flex-col justify-between pb-[23px] pt-1 font-mono text-[8px] text-[#adb2aa]">
+                  {[maxCashFlowValue, maxCashFlowValue * 0.75, maxCashFlowValue * 0.5, maxCashFlowValue * 0.25, 0].map((amount, index) => (
+                    <span key={`${amount}-${index}`}>
+                      {formatCurrency(amount, currency)}
                     </span>
+                  ))}
+                </div>
+                <div className="relative grid min-w-0 flex-1 grid-cols-[repeat(auto-fit,minmax(40px,1fr))] gap-[10px] border-b border-[#e4e5df]">
+                  <div className="pointer-events-none absolute inset-x-0 bottom-[23px] top-0 flex flex-col justify-between">
+                    <span className="border-t border-dashed border-[#e5e6e0]"></span>
+                    <span className="border-t border-dashed border-[#e5e6e0]"></span>
+                    <span className="border-t border-dashed border-[#e5e6e0]"></span>
+                    <span className="border-t border-dashed border-[#e5e6e0]"></span>
+                    <span className="border-t border-dashed border-[#e5e6e0]"></span>
                   </div>
-                ))}
+                  {cashFlowData.map((entry) => (
+                    <div
+                      className="relative z-10 flex min-w-0 flex-col justify-end"
+                      key={entry.month}
+                    >
+                      <div className="flex h-[calc(100%-23px)] items-end justify-center gap-[3px]">
+                        <span
+                          className="block min-h-1 w-[min(17px,40%)] rounded-t-[3px] bg-[var(--brand)]"
+                          style={{
+                            height: `${Math.max(((Number(entry.income) || 0) / maxCashFlowValue) * 100, 0)}%`,
+                          }}
+                        ></span>
+                        <span
+                          className="block min-h-1 w-[min(17px,40%)] rounded-t-[3px] bg-[var(--warning)]"
+                          style={{
+                            height: `${Math.max(((Number(entry.expenses) || 0) / maxCashFlowValue) * 100, 0)}%`,
+                          }}
+                        ></span>
+                      </div>
+                      <span className="block pt-2 text-center font-mono text-[9px] text-[#9a9d95]">
+                        {entry.month}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            }
           </article>
 
           <article className="rounded-[7px] border border-[var(--border)] bg-[var(--surface)] p-[22px] pb-5">
@@ -427,7 +521,7 @@ export default function Dashboard({
                 <div className="grid h-[88px] w-[88px] place-items-center rounded-full bg-[var(--surface)] max-[680px]:h-[78px] max-[680px]:w-[78px]">
                   <strong className="font-serif text-xl font-normal text-[var(--text-heading)] max-[680px]:text-[17px]">
                     {formatCurrency(
-                      dashboardData.summary.expensesTotal,
+                      visibleDashboardData.summary.expensesTotal,
                       currency,
                     )}
                   </strong>
@@ -526,12 +620,12 @@ export default function Dashboard({
             </button>
           </div>
           <div className="mt-[15px]">
-            {isLoading ?
+            {isCurrentRangeLoading ?
               <div className="rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-3 py-4 text-center text-[11px] text-[var(--text-secondary)]">
                 Loading recent transactions...
               </div>
-            : dashboardData.recentTransactions.length > 0 ?
-              dashboardData.recentTransactions.map((transaction) => (
+            : visibleDashboardData.recentTransactions.length > 0 ?
+              visibleDashboardData.recentTransactions.map((transaction) => (
                 <div
                   className="grid min-h-[60px] grid-cols-[34px_minmax(160px,1fr)_minmax(110px,0.5fr)_auto] items-center gap-3 border-t border-[var(--border)] max-[680px]:grid-cols-[30px_minmax(0,1fr)_auto] max-[680px]:gap-[9px] max-[680px]:min-h-16"
                   key={`${transaction.id ?? transaction.merchant}-${transaction.date}`}

@@ -5,6 +5,7 @@ import {
   buildDashboardData,
   calculateReportMetrics,
   formatReportInsight,
+  getCustomDateRangeError,
 } from "./reports.js";
 
 const now = new Date();
@@ -194,6 +195,89 @@ test("buildDashboardData calculates the selected period totals and recent transa
   );
   assert.equal(data.recentTransactions.length, 2);
   assert.equal(data.recentTransactions[0].merchant, "Income");
+  assert.equal(data.cashFlow.length, 7);
+  assert.equal(data.cashFlow[0].expenses, 0);
+});
+
+test("activity-trend data follows the selected period bucket layout", () => {
+  const asOfDate = new Date("2026-09-26T12:00:00");
+  const transactions = [
+    { amount: 1200, type: "income", date: "2026-09-26" },
+    { amount: 400, type: "expense", date: "2026-09-25" },
+    { amount: 750, type: "expense", date: "2026-09-19" },
+    { amount: 320, type: "expense", date: "2026-08-14" },
+    { amount: 900, type: "income", date: "2026-01-03" },
+  ];
+
+  const weekTrend = calculateReportMetrics(transactions, [], {
+    period: "week",
+    asOfDate,
+  }).monthlyTrend;
+  const monthTrend = calculateReportMetrics(transactions, [], {
+    period: "month",
+    asOfDate,
+  }).monthlyTrend;
+  const yearTrend = calculateReportMetrics(transactions, [], {
+    period: "year",
+    asOfDate,
+  }).monthlyTrend;
+
+  assert.equal(weekTrend.length, 7);
+  assert.equal(monthTrend.length, 6);
+  assert.equal(yearTrend.length, 12);
+  assert.ok(
+    weekTrend.some((entry) => Number(entry.value) > 0 && entry.month.length > 0),
+  );
+});
+
+test("custom date ranges include both boundary dates in dashboard and report trends", () => {
+  const transactions = [
+    { amount: 100, type: "expense", date: "2026-04-30" },
+    { amount: 200, type: "expense", date: "2026-05-01" },
+    { amount: 300, type: "income", date: "2026-05-15" },
+    { amount: 400, type: "expense", date: "2026-05-16" },
+  ];
+  const options = {
+    period: "custom",
+    dateRange: { start: "2026-05-01", end: "2026-05-15" },
+  };
+
+  const dashboard = buildDashboardData(transactions, [], options);
+  const reports = calculateReportMetrics(transactions, [], options);
+
+  assert.equal(dashboard.summary.expensesTotal, 200);
+  assert.equal(dashboard.summary.incomeTotal, 300);
+  assert.equal(
+    dashboard.cashFlow.reduce((sum, bucket) => sum + bucket.expenses, 0),
+    200,
+  );
+  assert.equal(
+    dashboard.cashFlow.reduce((sum, bucket) => sum + bucket.income, 0),
+    300,
+  );
+  assert.ok(dashboard.cashFlow[0].month.includes("May 1"));
+  assert.ok(dashboard.cashFlow.at(-1).month.includes("May 15"));
+  assert.equal(reports.summary.totalExpenses, 200);
+  assert.equal(reports.summary.totalIncome, 300);
+  assert.equal(
+    reports.monthlyTrend.reduce((sum, bucket) => sum + bucket.value, 0),
+    200,
+  );
+  assert.ok(reports.monthlyTrend[0].month.includes("May 1"));
+  assert.ok(reports.monthlyTrend.at(-1).month.includes("May 15"));
+  assert.ok(reports.monthlyTrend.length > 1);
+});
+
+test("custom date range validation rejects missing and reversed dates", () => {
+  assert.equal(
+    getCustomDateRangeError("2026-05-01", ""),
+    "Select both a start date and an end date.",
+  );
+  assert.equal(
+    getCustomDateRangeError("2026-05-15", "2026-05-01"),
+    "Start date must be on or before end date.",
+  );
+  assert.equal(getCustomDateRangeError("2026-05-01", "2026-05-15"), "");
 });
 
 test("formats report insight amounts with the selected currency", () => {

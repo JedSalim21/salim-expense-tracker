@@ -15,17 +15,6 @@ const defaultCategoryPalette = [
   "#ef4444",
 ];
 
-function getMonthKey(dateValue) {
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-}
-
 function getStartOfWeek(date) {
   const nextDate = new Date(date);
   const dayNumber = nextDate.getDay();
@@ -42,7 +31,64 @@ function getEndOfWeek(date) {
   return nextDate;
 }
 
-function getPeriodBounds(referenceDate, period = "month") {
+function parseDateInput(value, endOfDay = false) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? "");
+  if (!match) {
+    return null;
+  }
+
+  const [, yearValue, monthValue, dayValue] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+    endOfDay ? 23 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 999 : 0,
+  );
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function getCustomRangeBounds(dateRange) {
+  const start = parseDateInput(dateRange?.start);
+  const end = parseDateInput(dateRange?.end, true);
+  if (!start || !end || start > end) {
+    return null;
+  }
+
+  return { start, end };
+}
+
+export function getCustomDateRangeError(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return "Select both a start date and an end date.";
+  }
+
+  if (startDate > endDate) {
+    return "Start date must be on or before end date.";
+  }
+
+  return "";
+}
+
+function getPeriodBounds(referenceDate, period = "month", dateRange) {
+  if (period === "custom") {
+    return getCustomRangeBounds(dateRange);
+  }
+
   const date = new Date(referenceDate);
   date.setHours(0, 0, 0, 0);
 
@@ -95,61 +141,230 @@ function getPeriodBounds(referenceDate, period = "month") {
   }
 }
 
-function buildMonthlyTrend(transactions, asOfDate = new Date(), months = 6) {
-  const monthlyTotals = new Map();
-  const reference = new Date(asOfDate);
-  reference.setDate(1);
-  reference.setHours(0, 0, 0, 0);
-
-  for (let index = 0; index < months; index += 1) {
-    const monthDate = new Date(
-      reference.getFullYear(),
-      reference.getMonth() - index,
-      1,
-    );
-    const monthKey = getMonthKey(monthDate);
-    monthlyTotals.set(monthKey, 0);
-  }
-
-  for (const transaction of transactions) {
-    const monthKey = getMonthKey(
-      transaction.date ?? transaction.occurred_at ?? new Date(),
-    );
-    if (!monthKey) {
-      continue;
+function getTrendBuckets(
+  period = "month",
+  referenceDate = new Date(),
+  dateRange,
+) {
+  if (period === "custom") {
+    const bounds = getCustomRangeBounds(dateRange);
+    if (!bounds) {
+      return [];
     }
 
-    if (!monthlyTotals.has(monthKey)) {
-      monthlyTotals.set(monthKey, 0);
-    }
+    const start = new Date(bounds.start);
+    const end = new Date(bounds.end);
+    const dayCount =
+      Math.floor(
+        (Date.UTC(end.getFullYear(), end.getMonth(), end.getDate()) -
+          Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) /
+          86400000,
+      ) + 1;
+    const bucketSize = Math.max(1, Math.ceil(dayCount / 12));
+    const buckets = [];
 
-    const amount = Number(transaction.amount) || 0;
-    const signedAmount = transaction.type === "income" ? amount : -amount;
-    monthlyTotals.set(
-      monthKey,
-      (monthlyTotals.get(monthKey) || 0) + signedAmount,
-    );
-  }
+    for (let offset = 0; offset < dayCount; offset += bucketSize) {
+      const bucketStart = new Date(start);
+      bucketStart.setDate(start.getDate() + offset);
+      const bucketEnd = new Date(bucketStart);
+      const bucketDayCount = Math.min(bucketSize, dayCount - offset);
+      if (offset + bucketDayCount >= dayCount) {
+        bucketEnd.setTime(end.getTime());
+      } else {
+        bucketEnd.setDate(bucketStart.getDate() + bucketDayCount - 1);
+        bucketEnd.setHours(23, 59, 59, 999);
+      }
 
-  const orderedEntries = [];
-  for (let index = months - 1; index >= 0; index -= 1) {
-    const monthDate = new Date(
-      reference.getFullYear(),
-      reference.getMonth() - index,
-      1,
-    );
-    const monthKey = getMonthKey(monthDate);
-    const value = monthlyTotals.get(monthKey) || 0;
-    orderedEntries.push({
-      month: new Intl.DateTimeFormat("en-US", {
+      const dateLabelOptions = {
         month: "short",
+        day: "numeric",
         timeZone: getUserTimeZone(),
-      }).format(monthDate),
-      value: Math.abs(value),
+      };
+      const startLabel = new Intl.DateTimeFormat(
+        "en-US",
+        dateLabelOptions,
+      ).format(bucketStart);
+      const endLabel = new Intl.DateTimeFormat(
+        "en-US",
+        dateLabelOptions,
+      ).format(bucketEnd);
+      const label =
+        bucketDayCount === 1 ? startLabel : `${startLabel}–${endLabel}`;
+
+      buckets.push({
+        key: `custom-${offset}`,
+        label,
+        start: bucketStart,
+        end: bucketEnd,
+      });
+    }
+
+    return buckets;
+  }
+
+  const date = new Date(referenceDate);
+  date.setHours(0, 0, 0, 0);
+
+  if (period === "day") {
+    return Array.from({ length: 6 }, (_, index) => {
+      const startHour = index * 4;
+      const start = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        startHour,
+        0,
+        0,
+        0,
+      );
+      const end = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        index === 5 ? 23 : startHour + 3,
+        index === 5 ? 59 : 59,
+        index === 5 ? 59 : 59,
+        index === 5 ? 999 : 999,
+      );
+
+      return {
+        key: `day-${index}`,
+        label: `${String(startHour).padStart(2, "0")}:00`,
+        start,
+        end,
+      };
     });
   }
 
-  return orderedEntries;
+  if (period === "week") {
+    const weekStart = getStartOfWeek(date);
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const start = new Date(weekStart);
+      start.setDate(weekStart.getDate() + index);
+      const end = new Date(start);
+      end.setHours(23, 59, 59, 999);
+
+      return {
+        key: `week-${start.toISOString().slice(0, 10)}`,
+        label: new Intl.DateTimeFormat("en-US", {
+          weekday: "short",
+          timeZone: getUserTimeZone(),
+        }).format(start),
+        start,
+        end,
+      };
+    });
+  }
+
+  if (period === "year") {
+    return Array.from({ length: 12 }, (_, index) => {
+      const start = new Date(date.getFullYear(), index, 1, 0, 0, 0, 0);
+      const end = new Date(date.getFullYear(), index + 1, 0, 23, 59, 59, 999);
+
+      return {
+        key: `year-${index}`,
+        label: new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          timeZone: getUserTimeZone(),
+        }).format(start),
+        start,
+        end,
+      };
+    });
+  }
+
+  const monthEnd = new Date(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+  );
+  const daysInMonth = monthEnd.getDate();
+  const bucketCount = 6;
+  const chunkSize = Math.max(1, Math.ceil(daysInMonth / bucketCount));
+
+  return Array.from({ length: bucketCount }, (_, index) => {
+    const chunkStartDay = index * chunkSize + 1;
+    const chunkEndDay = Math.min(chunkStartDay + chunkSize - 1, daysInMonth);
+    const start = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      chunkStartDay,
+      0,
+      0,
+      0,
+      0,
+    );
+    const end = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      chunkEndDay,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    return {
+      key: `month-${index}`,
+      label: `W${index + 1}`,
+      start,
+      end,
+    };
+  });
+}
+
+function buildTrendSeries(
+  transactions,
+  period = "month",
+  asOfDate = new Date(),
+  dateRange,
+) {
+  const buckets = getTrendBuckets(period, asOfDate, dateRange);
+  const totals = new Map(
+    buckets.map((bucket) => [bucket.key, { income: 0, expenses: 0 }]),
+  );
+
+  for (const transaction of transactions) {
+    const value = transaction.date ?? transaction.occurred_at;
+    if (!value) {
+      continue;
+    }
+
+    const timestamp = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(timestamp.getTime())) {
+      continue;
+    }
+
+    const bucket = buckets.find(
+      ({ start, end }) => timestamp >= start && timestamp <= end,
+    );
+    if (!bucket) {
+      continue;
+    }
+
+    const current = totals.get(bucket.key) ?? { income: 0, expenses: 0 };
+    const amount = Number(transaction.amount) || 0;
+
+    if (transaction.type === "income") {
+      current.income += amount;
+    } else if (transaction.type === "expense") {
+      current.expenses += amount;
+    }
+
+    totals.set(bucket.key, current);
+  }
+
+  return buckets.map((bucket) => ({
+    month: bucket.label,
+    value: totals.get(bucket.key)?.expenses ?? 0,
+    income: totals.get(bucket.key)?.income ?? 0,
+    expenses: totals.get(bucket.key)?.expenses ?? 0,
+  }));
 }
 
 function buildCategoryBreakdown(transactions, categories) {
@@ -210,7 +425,7 @@ export function calculateReportMetrics(
   const period = options.period ?? "month";
   const referenceDate =
     options.asOfDate ? new Date(options.asOfDate) : new Date();
-  const bounds = getPeriodBounds(referenceDate, period);
+  const bounds = getPeriodBounds(referenceDate, period, options.dateRange);
 
   const periodTransactions = safeTransactions.filter((transaction) => {
     const value = transaction.date ?? transaction.occurred_at;
@@ -223,7 +438,7 @@ export function calculateReportMetrics(
       return false;
     }
 
-    return timestamp >= bounds.start && timestamp <= bounds.end;
+    return bounds && timestamp >= bounds.start && timestamp <= bounds.end;
   });
 
   const incomeTotal = periodTransactions
@@ -297,7 +512,12 @@ export function calculateReportMetrics(
       savingsRate: Number(savingsRate.toFixed(2)),
     },
     categoryBreakdown: breakdown,
-    monthlyTrend: buildMonthlyTrend(periodTransactions, referenceDate, 6),
+    monthlyTrend: buildTrendSeries(
+      periodTransactions,
+      period,
+      referenceDate,
+      options.dateRange,
+    ),
     topCategories,
     insights,
   };
@@ -312,7 +532,7 @@ export function buildDashboardData(
   const period = options.period ?? "month";
   const referenceDate =
     options.asOfDate ? new Date(options.asOfDate) : new Date();
-  const bounds = getPeriodBounds(referenceDate, period);
+  const bounds = getPeriodBounds(referenceDate, period, options.dateRange);
   const categoryMap = new Map(
     (categories ?? []).map((category) => [category.id, category]),
   );
@@ -334,7 +554,7 @@ export function buildDashboardData(
         return false;
       }
 
-      return timestamp >= bounds.start && timestamp <= bounds.end;
+      return bounds && timestamp >= bounds.start && timestamp <= bounds.end;
     })
     .sort((left, right) => {
       const leftTimestamp = new Date(
@@ -420,6 +640,12 @@ export function buildDashboardData(
     },
     categoryBreakdown,
     recentTransactions,
+    cashFlow: buildTrendSeries(
+      periodTransactions,
+      period,
+      referenceDate,
+      options.dateRange,
+    ),
   };
 }
 
