@@ -386,10 +386,10 @@ export default function ReportsPage({
 
                   return (
                     <div
-                      className="flex flex-1 flex-col items-center justify-end gap-2"
+                      className="flex h-full flex-1 flex-col items-center justify-end gap-2"
                       key={entry.month}
                     >
-                      <div className="flex h-full w-full items-end justify-center">
+                      <div className="flex min-h-0 w-full flex-1 items-end justify-center">
                         <span
                           className="block w-full max-w-[26px] rounded-t-[6px] bg-[var(--brand)] shadow-[0_8px_18px_rgba(15,118,110,0.18)]"
                           style={{ height: barHeight }}
