@@ -13,6 +13,7 @@ import {
 } from "react-icons/fi";
 import CustomDateRangeFields from "../components/CustomDateRangeFields";
 import PageLayout from "../components/PageLayout";
+import SpendingBreakdown from "../components/SpendingBreakdown";
 import { loadCategories } from "../lib/categories";
 import { createSupabaseClient } from "../lib/supabase";
 import {
@@ -220,6 +221,9 @@ export default function ReportsPage({
 
   const monthlyTrend = visibleReportMetrics.monthlyTrend;
   const categoryBreakdown = visibleReportMetrics.categoryBreakdown;
+  const expenseBreakdown = categoryBreakdown.filter(
+    (item) => item.type === "expense",
+  );
   const topCategories = visibleReportMetrics.topCategories;
   const recentInsights =
     visibleReportMetrics.insights.length > 0 ?
@@ -418,43 +422,15 @@ export default function ReportsPage({
               <FiPieChart aria-hidden="true" className="text-[var(--brand)]" />
             </div>
 
-            {categoryBreakdown.length === 0 ?
-              <div className="mt-5 text-sm text-[var(--text-secondary)]">
-                {isCurrentRangeLoading ?
-                  "Loading category totals..."
-                : "No category activity available yet."}
-              </div>
-            : <div className="mt-5 grid gap-3">
-                {categoryBreakdown.map((item) => (
-                  <div className="grid gap-1.5" key={item.id}>
-                    <div className="flex items-center justify-between gap-3 text-[11px] text-[var(--text-secondary)]">
-                      <span className="inline-flex items-center gap-[7px]">
-                        <i
-                          className="inline-block h-[7px] w-[7px] rounded-full"
-                          style={{ backgroundColor: item.color }}
-                        ></i>
-                        {item.label} · {item.type}
-                      </span>
-                      <span className="font-bold text-[var(--text-heading)]">
-                        {item.percent.toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="h-[7px] overflow-hidden rounded-full bg-[var(--surface-alt)]">
-                      <span
-                        className="block h-full rounded-full"
-                        style={{
-                          width: `${item.percent}%`,
-                          backgroundColor: item.color,
-                        }}
-                      ></span>
-                    </div>
-                    <div className="text-right text-[10px] font-bold text-[var(--text-secondary)]">
-                      {formatCurrency(item.amount, currency)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            }
+            <SpendingBreakdown
+              categories={expenseBreakdown}
+              total={visibleReportMetrics.summary.totalExpenses}
+              currency={currency}
+              periodLabel={selectedPeriodLabel}
+              isLoading={isCurrentRangeLoading}
+              emptyMessage="No expense category activity available yet."
+              onSeeAll={() => onSelectView("transactions")}
+            />
           </article>
         </div>
 

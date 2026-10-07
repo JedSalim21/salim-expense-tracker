@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import CustomDateRangeFields from "../components/CustomDateRangeFields";
 import PageLayout from "../components/PageLayout";
+import SpendingBreakdown from "../components/SpendingBreakdown";
 import { loadCategories } from "../lib/categories";
 import {
   buildDashboardData,
@@ -237,21 +238,6 @@ export default function Dashboard({
     visibleDashboardData.summary.incomeTotal > 0 ?
       (visibleDashboardData.summary.balance / visibleDashboardData.summary.incomeTotal) * 100
     : 0;
-  const chartBackground =
-    activeExpenseBreakdown.length > 0 ?
-      (() => {
-        let start = 0;
-        const segments = activeExpenseBreakdown.map((category) => {
-          const end = start + (category.percent || 0);
-          const segment = `${category.color} ${start}% ${end}%`;
-          start = end;
-          return segment;
-        });
-
-        return `conic-gradient(${segments.join(", ")})`;
-      })()
-    : "conic-gradient(#e9e8e0 0 100%)";
-
   return (
     <PageLayout
       ariaLabel="SalimSpend dashboard"
@@ -512,88 +498,15 @@ export default function Dashboard({
                 </h2>
               </div>
             </div>
-            <div className="grid gap-4 py-4 max-[680px]:hidden">
-              <div
-                className="mx-auto grid h-[138px] w-[138px] place-items-center rounded-full"
-                style={{ background: chartBackground }}
-                aria-label={`Spending breakdown for ${selectedPeriodLabel}`}
-              >
-                <div className="grid h-[88px] w-[88px] place-items-center rounded-full bg-[var(--surface)] max-[680px]:h-[78px] max-[680px]:w-[78px]">
-                  <strong className="font-serif text-xl font-normal text-[var(--text-heading)] max-[680px]:text-[17px]">
-                    {formatCurrency(
-                      visibleDashboardData.summary.expensesTotal,
-                      currency,
-                    )}
-                  </strong>
-                  <span className="-mt-5 text-[10px] text-[var(--text-muted)]">
-                    spent
-                  </span>
-                </div>
-              </div>
-              <div className="grid gap-3">
-                {activeExpenseBreakdown.length > 0 ?
-                  activeExpenseBreakdown.map((category) => (
-                    <div
-                      className="flex items-center justify-between gap-3 text-[10px] text-[var(--text-muted)]"
-                      key={`${category.label}-${category.color}`}
-                    >
-                      <span className="flex min-w-0 items-center gap-[7px] text-[var(--text-secondary)]">
-                        <i
-                          className="inline-block h-[7px] w-[7px] rounded-full"
-                          style={{ backgroundColor: category.color }}
-                        ></i>
-                        {category.label}
-                      </span>
-                      <strong className="text-right text-[11px] text-[var(--text-primary)]">
-                        {Math.round(category.percent)}%
-                      </strong>
-                      <span>{formatCurrency(category.amount, currency)}</span>
-                    </div>
-                  ))
-                : <div className="rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-3 py-4 text-center text-[11px] text-[var(--text-secondary)]">
-                    No expense data for {selectedPeriodLabel.toLowerCase()}.
-                  </div>
-                }
-              </div>
-            </div>
-            <div className="hidden max-[680px]:block pt-2">
-              {activeExpenseBreakdown.length > 0 ?
-                <div className="grid gap-3">
-                  {activeExpenseBreakdown.map((category) => (
-                    <div
-                      className="grid gap-2"
-                      key={`${category.label}-${category.color}`}
-                    >
-                      <div className="flex items-center justify-between gap-3 text-[11px] text-[var(--text-secondary)]">
-                        <span>{category.label}</span>
-                        <span className="font-bold text-[var(--text-primary)]">
-                          {formatCurrency(category.amount, currency)}
-                        </span>
-                      </div>
-                      <div className="h-[6px] overflow-hidden rounded-full bg-[var(--surface-soft)]">
-                        <span
-                          className="block h-full rounded-full"
-                          style={{
-                            width: `${Math.min(category.percent || 0, 100)}%`,
-                            backgroundColor: category.color,
-                          }}
-                        ></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              : <div className="rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-3 py-4 text-center text-[11px] text-[var(--text-secondary)]">
-                  No expense data for {selectedPeriodLabel.toLowerCase()}.
-                </div>
-              }
-            </div>
-            <button
-              className="text-[11px] font-extrabold text-[var(--brand)] no-underline hover:text-[var(--brand-strong)] hover:underline max-[680px]:hidden"
-              type="button"
-              onClick={() => onSelectView("reports")}
-            >
-              View full report <span aria-hidden="true">→</span>
-            </button>
+            <SpendingBreakdown
+              categories={activeExpenseBreakdown}
+              total={visibleDashboardData.summary.expensesTotal}
+              currency={currency}
+              periodLabel={selectedPeriodLabel}
+              isLoading={isCurrentRangeLoading}
+              emptyMessage={`No expense data for ${selectedPeriodLabel.toLowerCase()}.`}
+              onSeeAll={() => onSelectView("reports")}
+            />
           </article>
         </div>
 
